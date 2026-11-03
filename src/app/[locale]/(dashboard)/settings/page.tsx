@@ -2,7 +2,11 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Pencil, Trash2, X } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, requirePermission } from "@/lib/session";
-import { getDeadlinePresets, getEmailTemplates, getOffice } from "@/lib/settings";
+import { getAiSettings, getDeadlinePresets, getEmailTemplates, getOffice } from "@/lib/settings";
+import { decryptSecret, maskSecret } from "@/lib/crypto";
+import { AI_PROVIDERS } from "@/lib/ai/providers";
+import { AiTestButton } from "@/components/ai-test-button";
+import { clearAiKey, saveAiSettings, testAiConnection } from "@/server/ai/actions";
 import { SEQUENCE_DEFAULTS, formatNumber } from "@/lib/sequence";
 import { localized } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -30,7 +34,7 @@ import {
   uploadLogo,
 } from "@/server/settings/actions";
 
-const TABS = ["office", "courts", "types", "holidays", "numbering", "deadlines", "emails"] as const;
+const TABS = ["office", "ai", "courts", "types", "holidays", "numbering", "deadlines", "emails"] as const;
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; edit?: string }> }) {
   const user = await requirePermission("settings");
@@ -97,6 +101,42 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               )}
             </>
           )}
+        </Section>
+      </div>
+    );
+  } else if (tab === "ai") {
+    const ai = await getAiSettings();
+    const key = decryptSecret(ai.apiKeyEnc);
+    content = (
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Section title={t("assistant.settingsTitle")} className="xl:col-span-2">
+          <p className="mb-4 text-sm text-muted-foreground">{t("assistant.settingsHelp")}</p>
+          <EntityForm
+            schema="aiSettings"
+            action={saveAiSettings}
+            defaultValues={{ ...ai, apiKey: "" }}
+            fields={[
+              { name: "enabled", label: t("assistant.enabled"), type: "checkbox", span: 2 },
+              { name: "provider", label: t("assistant.provider"), type: "select", required: true, options: Object.keys(AI_PROVIDERS).map((p) => ({ value: p, label: t(`assistant.providers.${p}`) })) },
+              { name: "baseUrl", label: t("assistant.baseUrl"), dir: "ltr", placeholder: "https://…/v1", help: t("assistant.baseUrlHelp") },
+              { name: "model", label: t("assistant.model"), dir: "ltr", required: true, help: t("assistant.modelHelp") },
+              { name: "apiKey", label: t("assistant.apiKey"), type: "password", dir: "ltr", help: key ? t("assistant.keySet", { mask: maskSecret(key) }) : t("assistant.keyHelp") },
+              { name: "dailyBriefing", label: t("assistant.dailyBriefing"), type: "checkbox" },
+              { name: "briefingHour", label: t("assistant.briefingHour"), type: "number", help: t("assistant.briefingHelp") },
+            ]}
+          />
+        </Section>
+        <Section title={t("assistant.connection")}>
+          <p className="mb-3 text-sm">{key ? t("assistant.keyStored", { mask: maskSecret(key) }) : t("assistant.noKeyStored")}</p>
+          {canEdit && key && (
+            <div className="space-y-3">
+              <AiTestButton action={testAiConnection} />
+              <ActionButton variant="outline" action={clearAiKey} confirm={t("assistant.confirmClear")}>
+                <Trash2 /> {t("assistant.clearKey")}
+              </ActionButton>
+            </div>
+          )}
+          <p className="mt-4 text-xs text-muted-foreground">{t("assistant.privacy")}</p>
         </Section>
       </div>
     );

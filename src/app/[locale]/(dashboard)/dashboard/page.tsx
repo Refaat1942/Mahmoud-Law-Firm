@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { AlarmClock, Briefcase, CalendarClock, ListChecks, Plus } from "lucide-react";
+import { AlarmClock, Briefcase, CalendarClock, ListChecks, Plus, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, matterScope, requirePermission } from "@/lib/session";
 import { addDays, localized, localizedTitle, startOfDay } from "@/lib/utils";
@@ -84,6 +84,9 @@ export default async function DashboardPage() {
         subtitle={<DateText value={today} />}
         actions={
           <>
+            <Link href="/assistant?q=plan" className={buttonVariants({ variant: "outline" })}>
+              <Sparkles /> {t("assistant.planMyDay")}
+            </Link>
             {can(user, "matters", "create") && (
               <Link href="/cases/new" className={buttonVariants({ variant: "outline" })}>
                 <Plus /> {t("cases.new")}

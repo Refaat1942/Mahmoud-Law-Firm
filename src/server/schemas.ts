@@ -10,6 +10,7 @@ import * as accounting from "./accounting/schema";
 import * as hr from "./hr/schema";
 import * as settings from "./settings/schema";
 import * as portal from "./portal/schema";
+import * as ai from "./ai/schema";
 
 /** Lets client forms look up a schema by key, since Zod schemas cannot be passed from server components. */
 export const schemas = {
@@ -69,6 +70,7 @@ export const schemas = {
   preset: settings.presetSchema,
   emailTemplate: settings.emailTemplateSchema,
   message: portal.messageSchema,
+  aiSettings: ai.aiSettingsSchema,
 } as const;
 
 export type SchemaKey = keyof typeof schemas;

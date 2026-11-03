@@ -4,6 +4,7 @@ export type NavItem = { key: string; href: string; icon: string; module: Module 
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", href: "/dashboard", icon: "LayoutDashboard", module: "dashboard" },
+  { key: "assistant", href: "/assistant", icon: "Sparkles", module: "dashboard" },
   { key: "clients", href: "/clients", icon: "Users", module: "clients" },
   { key: "cases", href: "/cases", icon: "Briefcase", module: "matters" },
   { key: "hearings", href: "/hearings", icon: "Gavel", module: "hearings" },
