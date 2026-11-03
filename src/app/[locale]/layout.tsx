@@ -7,6 +7,10 @@ import { routing } from "@/i18n/routing";
 import { Providers } from "@/components/layout/providers";
 import "../globals.css";
 
+// Every page reads live data (settings, session, matters). Render on request so
+// `next build` never needs a database connection (e.g. inside the Docker build).
+export const dynamic = "force-dynamic";
+
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], variable: "--font-arabic" });
 const latin = Inter({ subsets: ["latin"], variable: "--font-latin" });
 
