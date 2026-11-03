@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f6f7fb;
+  --foreground: #0f1b33;
+  --card: #ffffff;
+  --card-foreground: #0f1b33;
+  --muted: #eef1f7;
+  --muted-foreground: #5b6884;
+  --border: #dde3ee;
+  --input: #cfd7e6;
+  --primary: #1b2a4a;
+  --primary-foreground: #ffffff;
+  --accent: #c9a24b;
+  --accent-foreground: #1b2a4a;
+  --destructive: #c53030;
+  --destructive-foreground: #ffffff;
+  --success: #2f855a;
+  --warning: #b7791f;
+  --sidebar: #13203b;
+  --sidebar-foreground: #d7deec;
+  --sidebar-active: #c9a24b;
+  --ring: #c9a24b;
+  --radius: 0.6rem;
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #e4e9f3;
+  --card: #111a2e;
+  --card-foreground: #e4e9f3;
+  --muted: #18233b;
+  --muted-foreground: #95a3bf;
+  --border: #22304d;
+  --input: #2b3a5a;
+  --primary: #c9a24b;
+  --primary-foreground: #0b1220;
+  --accent: #c9a24b;
+  --accent-foreground: #0b1220;
+  --destructive: #e05555;
+  --success: #48bb78;
+  --warning: #ecc94b;
+  --sidebar: #0a1120;
+  --sidebar-foreground: #c3cde0;
+  --sidebar-active: #c9a24b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --font-sans: var(--font-arabic), var(--font-latin), system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+html[lang="en"] body {
+  font-family: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+}
+
+/* FullCalendar theming */
+.fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-today-bg-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  --fc-button-bg-color: var(--primary);
+  --fc-button-border-color: var(--primary);
+  --fc-button-active-bg-color: var(--accent);
+  --fc-button-active-border-color: var(--accent);
+  font-size: 0.85rem;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

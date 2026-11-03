@@ -1,0 +1,1071 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────── Users, roles, audit ─────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  nameAr       String
+  nameEn       String
+  phone        String?
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  clientId     String?
+  client       Client?   @relation("ClientPortalUsers", fields: [clientId], references: [id])
+  isActive     Boolean   @default(true)
+  totpSecret   String?
+  totpEnabled  Boolean   @default(false)
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  lastLoginAt  DateTime?
+  locale       String    @default("ar")
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  employee        Employee?
+  memberships     MatterMember[]
+  responsibleFor  Matter[]       @relation("MatterResponsible")
+  hearings        Hearing[]      @relation("HearingLawyer")
+  tasksAssigned   Task[]         @relation("TaskAssignee")
+  tasksCreated    Task[]         @relation("TaskCreator")
+  taskComments    TaskComment[]
+  timeEntries     TimeEntry[]    @relation("TimeUser")
+  timeApproved    TimeEntry[]    @relation("TimeApprover")
+  rates           Rate[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  deadlines       Deadline[]
+  matterEvents    MatterEvent[]
+  messages        Message[]
+  documentUploads DocumentVersion[]
+  leaveApprovals  LeaveRequest[]
+
+  @@index([roleId])
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  key         String       @unique
+  nameAr      String
+  nameEn      String
+  scopeAll    Boolean      @default(true)
+  isSystem    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  permissions Permission[]
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module String
+  action String
+
+  @@unique([roleId, module, action])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  data      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ───────────── Clients ─────────────
+
+enum PartyType {
+  INDIVIDUAL
+  COMPANY
+}
+
+model Client {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  type           PartyType @default(INDIVIDUAL)
+  nameAr         String
+  nameEn         String
+  emiratesId     String?
+  passportNo     String?
+  nationality    String?
+  tradeLicenseNo String?
+  trn            String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  contacts       ClientContact[]
+  powers         PowerOfAttorney[]
+  matters        Matter[]
+  portalUsers    User[]             @relation("ClientPortalUsers")
+  invoices       Invoice[]
+  quotes         Quote[]
+  payments       Payment[]
+  trust          TrustTransaction[]
+  expenses       Expense[]
+  documents      Document[]
+  tasks          Task[]
+  rates          Rate[]
+  messages       Message[]
+
+  @@index([nameAr])
+  @@index([nameEn])
+}
+
+model ClientContact {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name      String
+  position  String?
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+}
+
+model PowerOfAttorney {
+  id        String    @id @default(cuid())
+  clientId  String
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  number    String
+  issuedAt  DateTime?
+  expiresAt DateTime?
+  notary    String?
+  scope     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([expiresAt])
+}
+
+model Party {
+  id        String        @id @default(cuid())
+  type      PartyType     @default(INDIVIDUAL)
+  nameAr    String
+  nameEn    String?
+  idNumber  String?
+  phone     String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  deletedAt DateTime?
+  matters   MatterParty[]
+
+  @@index([nameAr])
+}
+
+// ───────────── Matters ─────────────
+
+enum MatterLevel {
+  FIRST_INSTANCE
+  APPEAL
+  CASSATION
+  EXECUTION
+  ARBITRATION
+  CONSULTATION
+}
+
+enum MatterStatus {
+  OPEN
+  ON_HOLD
+  CLOSED
+}
+
+enum MatterOutcome {
+  WON
+  LOST
+  SETTLED
+  PARTIAL
+}
+
+enum MatterPartyRole {
+  OPPONENT
+  OPPONENT_LAWYER
+  EXPERT
+  WITNESS
+  OTHER
+}
+
+model MatterType {
+  id       String   @id @default(cuid())
+  key      String   @unique
+  nameAr   String
+  nameEn   String
+  isActive Boolean  @default(true)
+  matters  Matter[]
+}
+
+model Court {
+  id       String    @id @default(cuid())
+  nameAr   String
+  nameEn   String
+  emirate  String?
+  isActive Boolean   @default(true)
+  matters  Matter[]
+  hearings Hearing[]
+}
+
+model Matter {
+  id            String         @id @default(cuid())
+  fileNo        String         @unique
+  courtCaseNo   String?
+  titleAr       String
+  titleEn       String?
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id])
+  typeId        String?
+  type          MatterType?    @relation(fields: [typeId], references: [id])
+  level         MatterLevel    @default(FIRST_INSTANCE)
+  courtId       String?
+  court         Court?         @relation(fields: [courtId], references: [id])
+  status        MatterStatus   @default(OPEN)
+  outcome       MatterOutcome?
+  stage         String?
+  clientRole    String?
+  claimAmount   Decimal?       @db.Decimal(14, 2)
+  description   String?
+  openedAt      DateTime       @default(now())
+  closedAt      DateTime?
+  parentId      String?
+  parent        Matter?        @relation("MatterLinks", fields: [parentId], references: [id])
+  children      Matter[]       @relation("MatterLinks")
+  responsibleId String?
+  responsible   User?          @relation("MatterResponsible", fields: [responsibleId], references: [id])
+  createdById   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  members       MatterMember[]
+  parties       MatterParty[]
+  events        MatterEvent[]
+  hearings      Hearing[]
+  deadlines     Deadline[]
+  tasks         Task[]
+  documents     Document[]
+  timeEntries   TimeEntry[]
+  feeAgreement  FeeAgreement?
+  invoices      Invoice[]
+  quotes        Quote[]
+  expenses      Expense[]
+  trust         TrustTransaction[]
+  messages      Message[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([responsibleId])
+}
+
+model MatterMember {
+  id       String @id @default(cuid())
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  role     String @default("MEMBER")
+
+  @@unique([matterId, userId])
+}
+
+model MatterParty {
+  id       String          @id @default(cuid())
+  matterId String
+  matter   Matter          @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  partyId  String
+  party    Party           @relation(fields: [partyId], references: [id])
+  role     MatterPartyRole @default(OPPONENT)
+  notes    String?
+
+  @@unique([matterId, partyId, role])
+}
+
+model MatterEvent {
+  id        String   @id @default(cuid())
+  matterId  String
+  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  details   String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([matterId, createdAt])
+}
+
+// ───────────── Hearings, deadlines, tasks ─────────────
+
+enum HearingStatus {
+  SCHEDULED
+  HELD
+  POSTPONED
+  CANCELLED
+}
+
+model Hearing {
+  id            String        @id @default(cuid())
+  matterId      String
+  matter        Matter        @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  date          DateTime
+  courtId       String?
+  court         Court?        @relation(fields: [courtId], references: [id])
+  room          String?
+  lawyerId      String?
+  lawyer        User?         @relation("HearingLawyer", fields: [lawyerId], references: [id])
+  status        HearingStatus @default(SCHEDULED)
+  purpose       String?
+  decision      String?
+  notes         String?
+  previousId    String?       @unique
+  previous      Hearing?      @relation("HearingChain", fields: [previousId], references: [id])
+  next          Hearing?      @relation("HearingChain")
+  reminderSent  Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  @@index([date])
+  @@index([matterId])
+}
+
+model Deadline {
+  id         String    @id @default(cuid())
+  matterId   String
+  matter     Matter    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  title      String
+  kind       String    @default("CUSTOM")
+  startDate  DateTime
+  days       Int
+  dueDate    DateTime
+  done       Boolean   @default(false)
+  assigneeId String?
+  assignee   User?     @relation(fields: [assigneeId], references: [id])
+  reminderSent Boolean @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([dueDate])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  matterId    String?
+  matter      Matter?       @relation(fields: [matterId], references: [id])
+  clientId    String?
+  client      Client?       @relation(fields: [clientId], references: [id])
+  assigneeId  String?
+  assignee    User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  priority    Priority      @default(MEDIUM)
+  status      TaskStatus    @default(TODO)
+  dueDate     DateTime?
+  parentId    String?
+  parent      Task?         @relation("Subtasks", fields: [parentId], references: [id])
+  subtasks    Task[]        @relation("Subtasks")
+  createdById String?
+  createdBy   User?         @relation("TaskCreator", fields: [createdById], references: [id])
+  completedAt DateTime?
+  reminderSent Boolean      @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  comments    TaskComment[]
+
+  @@index([assigneeId, status])
+  @@index([dueDate])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// ───────────── Documents ─────────────
+
+enum DocumentCategory {
+  MEMO
+  JUDGMENT
+  CONTRACT
+  POWER_OF_ATTORNEY
+  EVIDENCE
+  CORRESPONDENCE
+  ID_DOCUMENT
+  OTHER
+}
+
+model Document {
+  id              String            @id @default(cuid())
+  name            String
+  matterId        String?
+  matter          Matter?           @relation(fields: [matterId], references: [id])
+  clientId        String?
+  client          Client?           @relation(fields: [clientId], references: [id])
+  folder          String            @default("/")
+  category        DocumentCategory  @default(OTHER)
+  tags            String[]
+  visibleToClient Boolean           @default(false)
+  currentVersion  Int               @default(1)
+  uploadedById    String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  versions        DocumentVersion[]
+
+  @@index([matterId])
+  @@index([clientId])
+  @@index([name])
+}
+
+model DocumentVersion {
+  id           String   @id @default(cuid())
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version      Int
+  storageKey   String
+  fileName     String
+  mimeType     String
+  size         Int
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([documentId, version])
+}
+
+model Template {
+  id        String           @id @default(cuid())
+  name      String
+  category  DocumentCategory @default(OTHER)
+  language  String           @default("ar")
+  body      String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+}
+
+// ───────────── Time & fees ─────────────
+
+enum TimeStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  BILLED
+}
+
+model TimeEntry {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation("TimeUser", fields: [userId], references: [id])
+  matterId     String
+  matter       Matter     @relation(fields: [matterId], references: [id])
+  date         DateTime
+  minutes      Int
+  description  String
+  billable     Boolean    @default(true)
+  rate         Decimal    @default(0) @db.Decimal(14, 2)
+  status       TimeStatus @default(DRAFT)
+  approvedById String?
+  approvedBy   User?      @relation("TimeApprover", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  invoiceId    String?
+  invoice      Invoice?   @relation(fields: [invoiceId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  @@index([userId, date])
+  @@index([matterId, status])
+}
+
+model Rate {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  amount    Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, clientId])
+}
+
+enum FeeType {
+  FIXED
+  HOURLY
+  PERCENTAGE
+  INSTALLMENTS
+}
+
+model FeeAgreement {
+  id           String           @id @default(cuid())
+  matterId     String           @unique
+  matter       Matter           @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  type         FeeType
+  amount       Decimal?         @db.Decimal(14, 2)
+  percentage   Decimal?         @db.Decimal(5, 2)
+  hourlyRate   Decimal?         @db.Decimal(14, 2)
+  notes        String?
+  signedAt     DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  installments FeeInstallment[]
+}
+
+model FeeInstallment {
+  id          String       @id @default(cuid())
+  agreementId String
+  agreement   FeeAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  dueDate     DateTime
+  amount      Decimal      @db.Decimal(14, 2)
+  description String?
+  invoiceId   String?
+  invoice     Invoice?     @relation(fields: [invoiceId], references: [id])
+}
+
+// ───────────── Billing ─────────────
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  CONVERTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum LineType {
+  TIME
+  EXPENSE
+  FEE
+  OTHER
+}
+
+model Quote {
+  id         String      @id @default(cuid())
+  number     String      @unique
+  clientId   String
+  client     Client      @relation(fields: [clientId], references: [id])
+  matterId   String?
+  matter     Matter?     @relation(fields: [matterId], references: [id])
+  date       DateTime    @default(now())
+  validUntil DateTime?
+  status     QuoteStatus @default(DRAFT)
+  currency   String      @default("AED")
+  subtotal   Decimal     @default(0) @db.Decimal(14, 2)
+  vatAmount  Decimal     @default(0) @db.Decimal(14, 2)
+  total      Decimal     @default(0) @db.Decimal(14, 2)
+  notes      String?
+  invoiceId  String?     @unique
+  invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
+  lines      QuoteLine[]
+}
+
+model QuoteLine {
+  id          String   @id @default(cuid())
+  quoteId     String
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  type        LineType @default(FEE)
+  description String
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(14, 2)
+  vatRate     Decimal  @db.Decimal(5, 2)
+  amount      Decimal  @db.Decimal(14, 2)
+  vatAmount   Decimal  @db.Decimal(14, 2)
+}
+
+model Invoice {
+  id           String           @id @default(cuid())
+  number       String           @unique
+  clientId     String
+  client       Client           @relation(fields: [clientId], references: [id])
+  matterId     String?
+  matter       Matter?          @relation(fields: [matterId], references: [id])
+  issueDate    DateTime         @default(now())
+  dueDate      DateTime?
+  status       InvoiceStatus    @default(DRAFT)
+  currency     String           @default("AED")
+  exchangeRate Decimal          @default(1) @db.Decimal(12, 6)
+  subtotal     Decimal          @default(0) @db.Decimal(14, 2)
+  vatAmount    Decimal          @default(0) @db.Decimal(14, 2)
+  total        Decimal          @default(0) @db.Decimal(14, 2)
+  paidAmount   Decimal          @default(0) @db.Decimal(14, 2)
+  creditAmount Decimal          @default(0) @db.Decimal(14, 2)
+  notes        String?
+  issuedAt     DateTime?
+  createdById  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+
+  lines        InvoiceLine[]
+  payments     Payment[]
+  creditNotes  CreditNote[]
+  timeEntries  TimeEntry[]
+  expenses     Expense[]
+  installments FeeInstallment[]
+  trust        TrustTransaction[]
+  quote        Quote?
+
+  @@index([clientId, status])
+  @@index([issueDate])
+}
+
+model InvoiceLine {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type        LineType @default(OTHER)
+  description String
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(14, 2)
+  vatRate     Decimal  @db.Decimal(5, 2)
+  amount      Decimal  @db.Decimal(14, 2)
+  vatAmount   Decimal  @db.Decimal(14, 2)
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CHEQUE
+  CARD
+}
+
+enum ChequeStatus {
+  PENDING
+  CLEARED
+  BOUNCED
+}
+
+model Payment {
+  id            String         @id @default(cuid())
+  number        String         @unique
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id])
+  invoiceId     String?
+  invoice       Invoice?       @relation(fields: [invoiceId], references: [id])
+  date          DateTime
+  amount        Decimal        @db.Decimal(14, 2)
+  method        PaymentMethod
+  chequeNo      String?
+  chequeDueDate DateTime?
+  chequeStatus  ChequeStatus?
+  bankAccountId String?
+  bankAccount   BankAccount?   @relation(fields: [bankAccountId], references: [id])
+  reference     String?
+  notes         String?
+  createdAt     DateTime       @default(now())
+  deletedAt     DateTime?
+
+  @@index([clientId])
+}
+
+model CreditNote {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  date      DateTime @default(now())
+  reason    String
+  subtotal  Decimal  @db.Decimal(14, 2)
+  vatAmount Decimal  @db.Decimal(14, 2)
+  total     Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+}
+
+enum TrustType {
+  DEPOSIT
+  WITHDRAWAL
+  APPLIED
+  REFUND
+}
+
+model TrustTransaction {
+  id            String       @id @default(cuid())
+  clientId      String
+  client        Client       @relation(fields: [clientId], references: [id])
+  matterId      String?
+  matter        Matter?      @relation(fields: [matterId], references: [id])
+  date          DateTime
+  type          TrustType
+  amount        Decimal      @db.Decimal(14, 2)
+  invoiceId     String?
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id])
+  bankAccountId String?
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+  notes         String?
+  createdAt     DateTime     @default(now())
+
+  @@index([clientId])
+}
+
+// ───────────── Accounting ─────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Account {
+  id         String        @id @default(cuid())
+  code       String        @unique
+  nameAr     String
+  nameEn     String
+  type       AccountType
+  parentId   String?
+  parent     Account?      @relation("AccountTree", fields: [parentId], references: [id])
+  children   Account[]     @relation("AccountTree")
+  isSystem   Boolean       @default(false)
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  lines      JournalLine[]
+  bank       BankAccount?
+  expenses   Expense[]
+}
+
+model JournalEntry {
+  id          String        @id @default(cuid())
+  number      String        @unique
+  date        DateTime
+  description String
+  sourceType  String?
+  sourceId    String?
+  createdById String?
+  createdAt   DateTime      @default(now())
+  lines       JournalLine[]
+
+  @@index([sourceType, sourceId])
+  @@index([date])
+}
+
+model JournalLine {
+  id           String       @id @default(cuid())
+  entryId      String
+  entry        JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  accountId    String
+  account      Account      @relation(fields: [accountId], references: [id])
+  debit        Decimal      @default(0) @db.Decimal(14, 2)
+  credit       Decimal      @default(0) @db.Decimal(14, 2)
+  memo         String?
+  reconciled   Boolean      @default(false)
+  reconciledAt DateTime?
+
+  @@index([accountId])
+}
+
+enum BankAccountType {
+  BANK
+  CASH
+}
+
+model BankAccount {
+  id        String             @id @default(cuid())
+  nameAr    String
+  nameEn    String
+  type      BankAccountType    @default(BANK)
+  bankName  String?
+  iban      String?
+  currency  String             @default("AED")
+  accountId String             @unique
+  account   Account            @relation(fields: [accountId], references: [id])
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  payments  Payment[]
+  expenses  Expense[]
+  trust     TrustTransaction[]
+}
+
+model Expense {
+  id            String       @id @default(cuid())
+  number        String       @unique
+  date          DateTime
+  accountId     String
+  account       Account      @relation(fields: [accountId], references: [id])
+  description   String
+  vendor        String?
+  amount        Decimal      @db.Decimal(14, 2)
+  vatAmount     Decimal      @default(0) @db.Decimal(14, 2)
+  matterId      String?
+  matter        Matter?      @relation(fields: [matterId], references: [id])
+  clientId      String?
+  client        Client?      @relation(fields: [clientId], references: [id])
+  billable      Boolean      @default(false)
+  invoiceId     String?
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id])
+  bankAccountId String
+  bankAccount   BankAccount  @relation(fields: [bankAccountId], references: [id])
+  createdAt     DateTime     @default(now())
+  deletedAt     DateTime?
+
+  @@index([matterId])
+}
+
+// ───────────── HR ─────────────
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum ContractType {
+  UNLIMITED
+  LIMITED
+}
+
+model Employee {
+  id                 String           @id @default(cuid())
+  code               String           @unique
+  nameAr             String
+  nameEn             String
+  userId             String?          @unique
+  user               User?            @relation(fields: [userId], references: [id])
+  position           String?
+  department         String?
+  nationality        String?
+  joinDate           DateTime
+  endDate            DateTime?
+  contractType       ContractType     @default(UNLIMITED)
+  status             EmployeeStatus   @default(ACTIVE)
+  emiratesId         String?
+  passportNo         String?
+  laborCardNo        String?
+  molPersonId        String?
+  bankRoutingCode    String?
+  iban               String?
+  basicSalary        Decimal          @db.Decimal(14, 2)
+  housingAllowance   Decimal          @default(0) @db.Decimal(14, 2)
+  transportAllowance Decimal          @default(0) @db.Decimal(14, 2)
+  otherAllowance     Decimal          @default(0) @db.Decimal(14, 2)
+  annualLeaveDays    Int              @default(30)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+
+  documents          EmployeeDocument[]
+  attendance         Attendance[]
+  leaves             LeaveRequest[]
+  payrollLines       PayrollLine[]
+}
+
+enum EmployeeDocType {
+  EMIRATES_ID
+  RESIDENCE
+  PASSPORT
+  LABOR_CARD
+  BAR_LICENSE
+  OTHER
+}
+
+model EmployeeDocument {
+  id           String          @id @default(cuid())
+  employeeId   String
+  employee     Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         EmployeeDocType
+  number       String
+  issueDate    DateTime?
+  expiryDate   DateTime?
+  reminderSent Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+
+  @@index([expiryDate])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+  REMOTE
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+
+  @@unique([employeeId, date])
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  PARENTAL
+  OTHER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id           String         @id @default(cuid())
+  employeeId   String
+  employee     Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         LeaveType
+  fromDate     DateTime
+  toDate       DateTime
+  days         Int
+  reason       String?
+  status       ApprovalStatus @default(PENDING)
+  approvedById String?
+  approvedBy   User?          @relation(fields: [approvedById], references: [id])
+  createdAt    DateTime       @default(now())
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+model Payroll {
+  id         String        @id @default(cuid())
+  period     String        @unique
+  status     PayrollStatus @default(DRAFT)
+  total      Decimal       @default(0) @db.Decimal(14, 2)
+  paidAt     DateTime?
+  bankAccountId String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  lines      PayrollLine[]
+}
+
+model PayrollLine {
+  id          String   @id @default(cuid())
+  payrollId   String
+  payroll     Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  basic       Decimal  @db.Decimal(14, 2)
+  allowances  Decimal  @db.Decimal(14, 2)
+  additions   Decimal  @default(0) @db.Decimal(14, 2)
+  deductions  Decimal  @default(0) @db.Decimal(14, 2)
+  net         Decimal  @db.Decimal(14, 2)
+  workDays    Int      @default(30)
+  leaveDays   Int      @default(0)
+  notes       String?
+
+  @@unique([payrollId, employeeId])
+}
+
+// ───────────── Portal, notifications, settings ─────────────
+
+model Message {
+  id         String    @id @default(cuid())
+  clientId   String
+  client     Client    @relation(fields: [clientId], references: [id])
+  matterId   String?
+  matter     Matter?   @relation(fields: [matterId], references: [id])
+  fromUserId String
+  fromUser   User      @relation(fields: [fromUserId], references: [id])
+  fromClient Boolean   @default(false)
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([clientId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model Holiday {
+  id     String   @id @default(cuid())
+  date   DateTime @unique @db.Date
+  nameAr String
+  nameEn String
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Sequence {
+  key     String @id
+  prefix  String
+  next    Int    @default(1)
+  padding Int    @default(4)
+  yearly  Boolean @default(true)
+  year    Int?
+}
