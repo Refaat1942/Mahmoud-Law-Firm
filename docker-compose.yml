@@ -14,17 +14,11 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/law_office
       REDIS_URL: redis://redis:6379
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      S3_BUCKET: law-office
       AUTH_TRUST_HOST: "true"
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-      minio:
         condition: service_started
     volumes:
       - uploads:/app/uploads
@@ -82,31 +76,7 @@ services:
       - redisdata:/data
     command: ["redis-server", "--appendonly", "yes"]
 
-  minio:
-    image: minio/minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    volumes:
-      - miniodata:/data
-    # Console is not published on the host.
-
-  minio-init:
-    image: minio/mc
-    depends_on: [minio]
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    entrypoint: >
-      sh -c 'sleep 5;
-      mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD";
-      mc mb -p local/law-office;
-      exit 0'
-
 volumes:
   pgdata:
   redisdata:
-  miniodata:
   uploads:

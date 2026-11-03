@@ -33,7 +33,6 @@ cd "$APP_DIR"
 if [[ ! -f .env ]]; then
   AUTH_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
   POSTGRES_PASSWORD="$(openssl rand -base64 24 | tr -d '\n=/+')"
-  MINIO_PASS="$(openssl rand -base64 24 | tr -d '\n=/+')"
   cat > .env <<EOF
 DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/law_office
 AUTH_SECRET=${AUTH_SECRET}
@@ -41,10 +40,6 @@ AUTH_TRUST_HOST=true
 APP_URL=https://${DOMAIN}
 LAW_FIRM_PORT=${PORT}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-MINIO_ROOT_USER=lawfirm
-MINIO_ROOT_PASSWORD=${MINIO_PASS}
-S3_REGION=me-central-1
-S3_BUCKET=law-office
 UPLOAD_DIR=./uploads
 REDIS_URL=redis://redis:6379
 SMTP_HOST=
