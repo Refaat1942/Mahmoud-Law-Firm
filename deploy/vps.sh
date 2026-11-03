@@ -56,15 +56,23 @@ fi
 mkdir -p backups
 docker compose up -d --build
 
+# `docker compose exec` reads stdin. Under `curl ... | bash` stdin is this script,
+# so every exec gets </dev/null or it swallows the rest of the script.
 echo "Waiting for the app to finish migrations..."
+ready=false
 for _ in $(seq 1 90); do
-  if docker compose exec -T app node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok||r.status===307?0:1)).catch(()=>process.exit(1))"; then
+  if docker compose exec -T app node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))" </dev/null; then
+    ready=true
     break
   fi
   sleep 2
 done
+if [[ "$ready" != true ]]; then
+  echo "The app did not answer within 3 minutes. Check: docker compose logs --tail=80 app"
+fi
 
-docker compose exec -T app npx prisma db seed || true
+echo "Seeding base data (admin user, roles, settings)..."
+docker compose exec -T app npx prisma db seed </dev/null || true
 
 if command -v nginx >/dev/null 2>&1; then
   SITE_SRC="${APP_DIR}/deploy/nginx-lawfirm.fratelanza.com.conf"
