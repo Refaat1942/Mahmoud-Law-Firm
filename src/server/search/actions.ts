@@ -18,7 +18,7 @@ export async function globalSearch(query: string): Promise<SearchHit[]> {
   const [clients, matters, documents, invoices, tasks, employees] = await Promise.all([
     can(user, "clients")
       ? prisma.client.findMany({
-          where: { deletedAt: null, OR: [{ nameAr: like }, { nameEn: like }, { code: like }, { emiratesId: like }, { phone: like }, { email: like }] },
+          where: { deletedAt: null, OR: [{ nameAr: like }, { nameEn: like }, { code: like }, { emiratesId: like }, { phone: like }, { mobile: like }, { altPhone: like }, { email: like }] },
           take: 6,
         })
       : [],

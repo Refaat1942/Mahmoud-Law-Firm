@@ -81,7 +81,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
           name: localized(c, locale),
           type: c.type,
           idNo: c.type === "COMPANY" ? (c.tradeLicenseNo ?? "") : (c.emiratesId ?? c.passportNo ?? ""),
-          phone: c.phone ?? "",
+          phone: c.mobile || c.phone || "",
           email: c.email ?? "",
           openMatters: c._count.matters,
           createdAt: c.createdAt.toISOString(),

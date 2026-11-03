@@ -1,8 +1,10 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { ActionError, defineAction } from "@/lib/action";
 import { prisma } from "@/lib/prisma";
 import { nextNumber } from "@/lib/sequence";
+import { putFile } from "@/lib/storage";
 import { clientSchema, contactSchema, partySchema, poaSchema } from "./schema";
 
 const normalizeEid = (v?: string) => (v ? v.replace(/^(784)-?(\d{4})-?(\d{7})-?(\d)$/, "$1-$2-$3-$4") : v);
@@ -36,13 +38,32 @@ export const deleteContact = defineAction({ module: "clients", perm: "update", e
   return { id };
 });
 
-export const addPoa = defineAction({ module: "clients", perm: "update", entity: "PowerOfAttorney", schema: poaSchema }, async (input, _c, clientId: string) => {
-  const p = await prisma.powerOfAttorney.create({ data: { ...input, clientId } });
-  return { id: p.id };
+/** Saves the PoA; an attached PDF is stored as a client document (category POWER_OF_ATTORNEY) and linked to it. */
+export const addPoa = defineAction({ module: "clients", perm: "update", entity: "PowerOfAttorney", schema: poaSchema }, async ({ file, ...input }, { user }, clientId: string) => {
+  const stored = file ? await putFile(file, "documents") : null;
+  const t = await getTranslations("clients");
+  const p = await prisma.$transaction(async (tx) => {
+    const doc = stored
+      ? await tx.document.create({
+          data: {
+            name: t("poaDocName", { number: input.number }),
+            clientId,
+            folder: "/" + t("poaFolder"),
+            category: "POWER_OF_ATTORNEY",
+            uploadedById: user.id,
+            versions: { create: { version: 1, storageKey: stored.key, fileName: stored.fileName, mimeType: stored.mimeType, size: stored.size, uploadedById: user.id } },
+          },
+        })
+      : null;
+    return tx.powerOfAttorney.create({ data: { ...input, clientId, documentId: doc?.id } });
+  });
+  return { id: p.id, audit: { ...input, clientId, fileName: stored?.fileName } };
 });
 
 export const deletePoa = defineAction({ module: "clients", perm: "update", entity: "PowerOfAttorney" }, async (_i, _c, id: string) => {
-  await prisma.powerOfAttorney.update({ where: { id }, data: { deletedAt: new Date() } });
+  const now = new Date();
+  const p = await prisma.powerOfAttorney.update({ where: { id }, data: { deletedAt: now } });
+  if (p.documentId) await prisma.document.update({ where: { id: p.documentId }, data: { deletedAt: now } });
   return { id };
 });
 

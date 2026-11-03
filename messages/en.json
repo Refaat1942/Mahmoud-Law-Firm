@@ -101,7 +101,8 @@
     "journalLines": "An entry needs at least two lines",
     "dateOrder": "End date is before start date",
     "period": "Period format is YYYY-MM",
-    "fileTooLarge": "File is larger than 20 MB"
+    "fileTooLarge": "File is larger than 20 MB",
+    "pdfOnly": "The file must be a PDF"
   },
   "errors": {
     "unauthorized": "Your session expired, please sign in again",
@@ -192,7 +193,7 @@
     "dateTime": "Date & time",
     "room": "Hall",
     "lawyer": "Lawyer",
-    "purpose": "Purpose",
+    "purpose": "Counsel / lawyer requests",
     "decision": "Decision",
     "assignee": "Assignee",
     "priority": "Priority",
@@ -279,7 +280,9 @@
     "reminderDaysBefore": "Remind days before",
     "defaultHourlyRate": "Default hourly rate",
     "wpsEmployerId": "Employer ID (WPS)",
-    "wpsBankCode": "Employer bank code (WPS)"
+    "wpsBankCode": "Employer bank code (WPS)",
+    "mobile": "Mobile",
+    "altPhone": "Other phone"
   },
   "enum": {
     "PartyType": { "INDIVIDUAL": "Individual", "COMPANY": "Company" },
@@ -337,7 +340,12 @@
     "matchingClients": "Matching clients",
     "matchingParties": "Matching opponents & parties",
     "conflictReminder": "Make sure you ran a conflict check before registering the client",
-    "hasOpenMatters": "A client with open cases cannot be deleted"
+    "hasOpenMatters": "A client with open cases cannot be deleted",
+    "poaFile": "Power of attorney file (PDF)",
+    "poaFileHelp": "Saved with the client's documents and shown here and in the Documents tab",
+    "noPoaFile": "No file",
+    "poaFolder": "Powers of attorney",
+    "poaDocName": "Power of attorney {number}"
   },
   "cases": {
     "title": "Cases",
@@ -395,7 +403,7 @@
     "recordDecision": "Record decision",
     "decisionHelp": "When postponed, enter the next hearing date and it will be created automatically with the same court and lawyer",
     "nextDate": "Next hearing date",
-    "nextPurpose": "Next hearing purpose",
+    "nextPurpose": "Counsel / lawyer requests for the next hearing",
     "addDeadline": "Add legal deadline",
     "deadlineHelp": "The due date is computed automatically; if it falls on a weekend or public holiday it moves to the next working day",
     "presetHelp": "Leave empty to use the default of the selected type",
@@ -411,7 +419,14 @@
       "scheduled": "Hearing on {date}",
       "decision": "Hearing decision {date}: {decision}",
       "deadline": "Legal deadline: {title} until {date}"
-    }
+    },
+    "rollPdf": "Export PDF to print",
+    "quick": { "today": "Today's hearings", "tomorrow": "Tomorrow's hearings", "afterTomorrow": "Day after tomorrow" },
+    "rollFor": "Hearing roll for",
+    "rollCount": "{count} hearings",
+    "cols": { "courtCapacity": "Court & capacity", "level": "Court level", "client": "Client", "opponent": "Opponent", "lastDecision": "Last decision & date", "requests": "Counsel / lawyer requests" },
+    "capacity": "Capacity: {role}",
+    "purposeHelp": "What to do at the hearing, e.g. file a defence memo"
   },
   "dashboard": {
     "welcome": "Welcome, {name}",

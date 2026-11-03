@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zEnum, zOptDate, zOptEmail, zOptText, zText } from "../common";
+import { zEnum, zOptDate, zOptEmail, zOptPdf, zOptText, zText } from "../common";
 
 export const clientSchema = z
   .object({
@@ -20,6 +20,8 @@ export const clientSchema = z
     trn: z.preprocess((v) => (v === "" ? undefined : v), z.string().trim().regex(/^\d{15}$/, "v.trn").optional()),
     email: zOptEmail(),
     phone: zOptText(30),
+    mobile: zOptText(30),
+    altPhone: zOptText(30),
     address: zOptText(500),
     notes: zOptText(),
   })
@@ -38,6 +40,7 @@ export const poaSchema = z.object({
   expiresAt: zOptDate(),
   notary: zOptText(200),
   scope: zOptText(),
+  file: zOptPdf(),
 });
 
 export const partySchema = z.object({

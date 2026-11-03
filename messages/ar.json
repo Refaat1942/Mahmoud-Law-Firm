@@ -101,7 +101,8 @@
     "journalLines": "القيد يحتاج سطرين على الأقل",
     "dateOrder": "تاريخ النهاية قبل تاريخ البداية",
     "period": "الفترة بالصيغة YYYY-MM",
-    "fileTooLarge": "حجم الملف أكبر من 20 ميجابايت"
+    "fileTooLarge": "حجم الملف أكبر من 20 ميجابايت",
+    "pdfOnly": "يجب أن يكون الملف بصيغة PDF"
   },
   "errors": {
     "unauthorized": "انتهت الجلسة، سجّل الدخول مرة أخرى",
@@ -192,7 +193,7 @@
     "dateTime": "التاريخ والوقت",
     "room": "القاعة",
     "lawyer": "المحامي",
-    "purpose": "الغرض من الجلسة",
+    "purpose": "طلبات المستشار / المحامي",
     "decision": "القرار",
     "assignee": "المسؤول",
     "priority": "الأولوية",
@@ -279,7 +280,9 @@
     "reminderDaysBefore": "التذكير قبل الموعد (أيام)",
     "defaultHourlyRate": "سعر الساعة الافتراضي",
     "wpsEmployerId": "رقم المنشأة (WPS)",
-    "wpsBankCode": "رمز بنك المنشأة (WPS)"
+    "wpsBankCode": "رمز بنك المنشأة (WPS)",
+    "mobile": "الهاتف المتحرك",
+    "altPhone": "هاتف آخر"
   },
   "enum": {
     "PartyType": { "INDIVIDUAL": "فرد", "COMPANY": "شركة" },
@@ -337,7 +340,12 @@
     "matchingClients": "عملاء مطابقون",
     "matchingParties": "خصوم وأطراف مطابقون",
     "conflictReminder": "تأكد من إجراء فحص تعارض المصالح قبل تسجيل العميل",
-    "hasOpenMatters": "لا يمكن حذف عميل لديه قضايا مفتوحة"
+    "hasOpenMatters": "لا يمكن حذف عميل لديه قضايا مفتوحة",
+    "poaFile": "ملف الوكالة (PDF)",
+    "poaFileHelp": "يُحفظ ضمن مستندات العميل ويظهر هنا وفي تبويب المستندات",
+    "noPoaFile": "بدون ملف",
+    "poaFolder": "الوكالات",
+    "poaDocName": "وكالة رقم {number}"
   },
   "cases": {
     "title": "القضايا",
@@ -395,7 +403,7 @@
     "recordDecision": "تسجيل القرار",
     "decisionHelp": "عند التأجيل أدخل تاريخ الجلسة التالية وسيتم إنشاؤها تلقائياً بنفس المحكمة والمحامي",
     "nextDate": "تاريخ الجلسة التالية",
-    "nextPurpose": "الغرض من الجلسة التالية",
+    "nextPurpose": "طلبات المستشار / المحامي للجلسة التالية",
     "addDeadline": "إضافة موعد قانوني",
     "deadlineHelp": "يُحسب تاريخ الاستحقاق تلقائياً، وإذا وقع في عطلة نهاية الأسبوع أو عطلة رسمية يُرحَّل لأول يوم عمل",
     "presetHelp": "اتركه فارغاً لاستخدام القيمة الافتراضية للنوع المختار",
@@ -411,7 +419,14 @@
       "scheduled": "جلسة بتاريخ {date}",
       "decision": "قرار جلسة {date}: {decision}",
       "deadline": "موعد قانوني: {title} حتى {date}"
-    }
+    },
+    "rollPdf": "تصدير PDF للطباعة",
+    "quick": { "today": "جلسات اليوم", "tomorrow": "جلسات الغد", "afterTomorrow": "بعد غد" },
+    "rollFor": "رول جلسات يوم",
+    "rollCount": "{count} جلسة",
+    "cols": { "courtCapacity": "المحكمة والصفة", "level": "درجة التقاضي", "client": "اسم الموكل", "opponent": "اسم الخصم", "lastDecision": "تاريخ وآخر قرار", "requests": "طلبات المستشار / المحامي" },
+    "capacity": "الصفة: {role}",
+    "purposeHelp": "الإجراء المطلوب في الجلسة، مثل: تقديم مذكرة دفاع"
   },
   "dashboard": {
     "welcome": "أهلًا، {name}",

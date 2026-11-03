@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Eye, MessageCircle, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, matterScope, requirePermission } from "@/lib/session";
 import { localized, localizedTitle } from "@/lib/utils";
@@ -17,6 +17,25 @@ import { DetailList, PageHeader, Section, StatCard, Tabs } from "@/components/pa
 import { addContact, addPoa, deleteClient, deleteContact, deletePoa } from "@/server/clients/actions";
 import { clientStatement } from "@/server/clients/queries";
 
+/** A tap-to-call number; mobiles also get a WhatsApp link. */
+function PhoneLink({ value, whatsapp }: { value: string; whatsapp?: boolean }) {
+  const digits = value.replace(/[^\d+]/g, "");
+  const wa = digits.replace(/^\+/, "").replace(/^00/, "").replace(/^0(?=5)/, "971");
+  return (
+    <span className="inline-flex items-center gap-2" dir="ltr">
+      <a href={`tel:${digits}`} className="inline-flex items-center gap-1 text-primary hover:underline dark:text-accent">
+        <Phone className="size-3.5" />
+        {value}
+      </a>
+      {whatsapp && (
+        <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener" className="text-success hover:opacity-80" aria-label="WhatsApp">
+          <MessageCircle className="size-4" />
+        </a>
+      )}
+    </span>
+  );
+}
+
 export default async function ClientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const user = await requirePermission("clients");
   const { id } = await params;
@@ -25,7 +44,12 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const locale = await getLocale();
   const client = await prisma.client.findFirst({
     where: { id, deletedAt: null },
-    include: { contacts: { orderBy: { createdAt: "asc" } }, powers: { where: { deletedAt: null }, orderBy: { expiresAt: "asc" } } },
+    include: { contacts: { orderBy: { createdAt: "asc" } }, powers: {
+        where: { deletedAt: null },
+        include: { document: { include: { versions: { orderBy: { version: "desc" }, take: 1 } } } },
+        orderBy: { expiresAt: "asc" },
+      },
+    },
   });
   if (!client) notFound();
   const canEdit = can(user, "clients", "update");
@@ -143,7 +167,9 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
                   ]),
               { label: t("f.trn"), value: client.trn },
               { label: t("f.email"), value: client.email },
-              { label: t("f.phone"), value: <span dir="ltr">{client.phone}</span> },
+              { label: t("f.mobile"), value: client.mobile && <PhoneLink value={client.mobile} whatsapp /> },
+              { label: t("f.phone"), value: client.phone && <PhoneLink value={client.phone} /> },
+              { label: t("f.altPhone"), value: client.altPhone && <PhoneLink value={client.altPhone} /> },
               { label: t("f.address"), value: client.address },
               { label: t("f.notes"), value: client.notes },
             ]}
@@ -151,6 +177,91 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         </Section>
 
         <div className="grid gap-5 lg:grid-cols-2">
+          <Section title={t("clients.powers")}>
+            {client.powers.length > 0 && (
+              <Table className="mb-4">
+                <thead>
+                  <tr>
+                    <Th>{t("f.poaNumber")}</Th>
+                    <Th>{t("f.issuedAt")}</Th>
+                    <Th>{t("f.expiresAt")}</Th>
+                    <Th>{t("f.notary")}</Th>
+                    <Th>{t("f.file")}</Th>
+                    {canEdit && <Th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {client.powers.map((p) => {
+                    const left = p.expiresAt ? daysUntil(p.expiresAt) : null;
+                    return (
+                      <tr key={p.id}>
+                        <Td>{p.number}</Td>
+                        <Td>
+                          <DateText value={p.issuedAt} />
+                        </Td>
+                        <Td>
+                          <DateText value={p.expiresAt} />{" "}
+                          {left !== null && left < 0 && <Badge tone="danger">{t("enum.ExpiryState.EXPIRED")}</Badge>}
+                          {left !== null && left >= 0 && left <= 30 && <Badge tone="warning">{t("clients.daysLeft", { days: left })}</Badge>}
+                        </Td>
+                        <Td>{p.notary}</Td>
+                        <Td className="whitespace-nowrap">
+                          {p.document?.versions[0] ? (
+                            <>
+                              <a
+                                href={`/api/documents/${p.document.versions[0].id}?inline=1`}
+                                target="_blank"
+                                rel="noopener"
+                                className={buttonVariants({ variant: "ghost", size: "icon" })}
+                                aria-label={t("documents.preview")}
+                                title={t("documents.preview")}
+                              >
+                                <Eye />
+                              </a>
+                              <a
+                                href={`/api/documents/${p.document.versions[0].id}`}
+                                className={buttonVariants({ variant: "ghost", size: "icon" })}
+                                aria-label={t("common.download")}
+                                title={t("common.download")}
+                              >
+                                <Download />
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{t("clients.noPoaFile")}</span>
+                          )}
+                        </Td>
+                        {canEdit && (
+                          <Td>
+                            <ActionButton variant="ghost" size="icon" action={deletePoa.bind(null, p.id)} confirm={t("common.confirmDelete")} aria-label={t("common.delete")}>
+                              <Trash2 />
+                            </ActionButton>
+                          </Td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            )}
+            {canEdit && (
+              <EntityForm
+                compact
+                schema="poa"
+                action={addPoa.bind(null, id)}
+                resetOnSuccess
+                submitLabel={t("common.add")}
+                fields={[
+                  { name: "number", label: t("f.poaNumber"), required: true },
+                  { name: "notary", label: t("f.notary") },
+                  { name: "issuedAt", label: t("f.issuedAt"), type: "date" },
+                  { name: "expiresAt", label: t("f.expiresAt"), type: "date" },
+                  { name: "file", label: t("clients.poaFile"), type: "file", span: 2, help: t("clients.poaFileHelp") },
+                  { name: "scope", label: t("f.scope"), type: "textarea" },
+                ]}
+              />
+            )}
+          </Section>
           <Section title={t("clients.contacts")}>
             {client.contacts.length > 0 && (
               <Table className="mb-4">
@@ -199,63 +310,6 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             )}
           </Section>
 
-          <Section title={t("clients.powers")}>
-            {client.powers.length > 0 && (
-              <Table className="mb-4">
-                <thead>
-                  <tr>
-                    <Th>{t("f.poaNumber")}</Th>
-                    <Th>{t("f.issuedAt")}</Th>
-                    <Th>{t("f.expiresAt")}</Th>
-                    <Th>{t("f.notary")}</Th>
-                    {canEdit && <Th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {client.powers.map((p) => {
-                    const left = p.expiresAt ? daysUntil(p.expiresAt) : null;
-                    return (
-                      <tr key={p.id}>
-                        <Td>{p.number}</Td>
-                        <Td>
-                          <DateText value={p.issuedAt} />
-                        </Td>
-                        <Td>
-                          <DateText value={p.expiresAt} />{" "}
-                          {left !== null && left < 0 && <Badge tone="danger">{t("enum.ExpiryState.EXPIRED")}</Badge>}
-                          {left !== null && left >= 0 && left <= 30 && <Badge tone="warning">{t("clients.daysLeft", { days: left })}</Badge>}
-                        </Td>
-                        <Td>{p.notary}</Td>
-                        {canEdit && (
-                          <Td>
-                            <ActionButton variant="ghost" size="icon" action={deletePoa.bind(null, p.id)} confirm={t("common.confirmDelete")} aria-label={t("common.delete")}>
-                              <Trash2 />
-                            </ActionButton>
-                          </Td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            )}
-            {canEdit && (
-              <EntityForm
-                compact
-                schema="poa"
-                action={addPoa.bind(null, id)}
-                resetOnSuccess
-                submitLabel={t("common.add")}
-                fields={[
-                  { name: "number", label: t("f.poaNumber"), required: true },
-                  { name: "notary", label: t("f.notary") },
-                  { name: "issuedAt", label: t("f.issuedAt"), type: "date" },
-                  { name: "expiresAt", label: t("f.expiresAt"), type: "date" },
-                  { name: "scope", label: t("f.scope"), type: "textarea" },
-                ]}
-              />
-            )}
-          </Section>
         </div>
       </div>
     );
@@ -265,7 +319,15 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     <>
       <PageHeader
         title={localized(client, locale)}
-        subtitle={`${client.code} · ${t(`enum.PartyType.${client.type}`)}`}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>
+              {client.code} · {t(`enum.PartyType.${client.type}`)}
+            </span>
+            {client.mobile && <PhoneLink value={client.mobile} whatsapp />}
+            {client.phone && <PhoneLink value={client.phone} />}
+          </span>
+        }
         actions={
           <>
             {can(user, "matters", "create") && (
