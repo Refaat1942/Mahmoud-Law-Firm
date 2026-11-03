@@ -15,7 +15,8 @@
     "reports": "Reports",
     "users": "Users & permissions",
     "settings": "Settings",
-    "collapse": "Collapse menu"
+    "collapse": "Collapse menu",
+    "assistant": "AI assistant"
   },
   "topbar": { "language": "Language", "theme": "Dark mode", "notifications": "Notifications", "logout": "Sign out" },
   "search": {
@@ -103,7 +104,8 @@
     "period": "Period format is YYYY-MM",
     "fileTooLarge": "File is larger than 20 MB",
     "pdfOnly": "The file must be a PDF",
-    "imageOnly": "The logo must be a PNG or JPG image"
+    "imageOnly": "The logo must be a PNG or JPG image",
+    "url": "Invalid URL"
   },
   "errors": {
     "unauthorized": "Your session expired, please sign in again",
@@ -788,7 +790,7 @@
     "sifEmployeesMissing": "Employees without MOHRE person ID, routing code or IBAN: {list}"
   },
   "settings": {
-    "tabs": { "office": "Office", "courts": "Courts", "types": "Case types", "holidays": "Public holidays", "numbering": "Numbering", "deadlines": "Legal deadlines", "emails": "Message templates" },
+    "tabs": { "office": "Office", "courts": "Courts", "types": "Case types", "holidays": "Public holidays", "numbering": "Numbering", "deadlines": "Legal deadlines", "emails": "Message templates", "ai": "AI" },
     "office": "Office details",
     "addressAr": "Address (Arabic)",
     "addressEn": "Address (English)",
@@ -855,5 +857,48 @@
     "office": "Office",
     "reply": "Reply to client",
     "noPortalUsers": "This client has no portal account yet; create one in Users & permissions so they can read the reply."
+  },
+  "assistant": {
+    "title": "AI assistant",
+    "subtitle": "Answers from the office data you have access to, organises your day and adds reminders",
+    "intro": "Ask me about your hearings, deadlines, tasks and cases, or ask me to plan your day or remind you of something.",
+    "placeholder": "Type your question… (Enter to send, Shift+Enter for a new line)",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "newChat": "New chat",
+    "empty": "No reply received.",
+    "taskCreated": "Reminder added: {title}",
+    "prompts": { "planDay": "Plan my day", "week": "What are my hearings this week?", "overdue": "What is overdue for me?", "remind": "Remind me tomorrow to review the defence memo" },
+    "notConfigured": "The AI assistant is not enabled yet.",
+    "configure": "Set up the assistant",
+    "askAdmin": "Ask the office manager to enable it in Settings.",
+    "privacy": "Questions and the office data needed to answer them are sent to the selected AI provider. Do not send anything you do not want to share, and check the provider's data protection policy.",
+    "planMyDay": "Plan my day",
+    "errors": { "notConfigured": "The assistant is disabled or missing a key or model", "auth": "The API key is invalid or not allowed", "model": "The provider does not have this model; check the model name", "rate": "The provider's usage limit was reached, try again shortly", "provider": "Could not reach the AI provider", "baseUrl": "Enter the service URL for a custom provider", "noKey": "No key saved yet" },
+    "settingsTitle": "AI assistant setup",
+    "settingsHelp": "Works with OpenAI or any OpenAI-compatible service (Google Gemini, DeepSeek, OpenRouter, or your own server). Enter the key and model name, then test the connection.",
+    "enabled": "Enable the AI assistant",
+    "provider": "Provider",
+    "providers": { "openai": "OpenAI", "gemini": "Google Gemini", "deepseek": "DeepSeek", "openrouter": "OpenRouter", "custom": "Custom (OpenAI-compatible URL)" },
+    "baseUrl": "Service URL",
+    "baseUrlHelp": "Leave empty to use the provider's default URL",
+    "model": "Model",
+    "modelHelp": "The model name as the provider lists it; the test button shows the models your key can use",
+    "apiKey": "API key",
+    "keySet": "Saved ({mask}) — leave empty to keep it",
+    "keyHelp": "Stored encrypted and never shown again",
+    "dailyBriefing": "Daily morning briefing for each user",
+    "briefingHour": "Briefing hour (UAE time)",
+    "briefingHelp": "Sends a notification and email with the day's plan to users with hearings, tasks or deadlines",
+    "connection": "Connection",
+    "keyStored": "Saved key: {mask}",
+    "noKeyStored": "No key saved",
+    "confirmClear": "Delete the key and disable the assistant?",
+    "clearKey": "Delete key",
+    "test": "Test connection",
+    "testing": "Testing…",
+    "connected": "Connected",
+    "modelMissing": "The selected model is not in this key's model list",
+    "availableModels": "{count} models available:"
   }
 }

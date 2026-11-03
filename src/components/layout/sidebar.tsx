@@ -16,6 +16,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  Sparkles,
   Timer,
   Users,
   type LucideIcon,
@@ -39,6 +40,7 @@ const ICONS: Record<string, LucideIcon> = {
   ChartColumn,
   ShieldCheck,
   Settings,
+  Sparkles,
 };
 
 export function Sidebar({ items, officeName }: { items: { key: string; href: string; icon: string }[]; officeName: string }) {

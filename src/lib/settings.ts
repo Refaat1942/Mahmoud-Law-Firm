@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { DEFAULT_AI, type AiSettings } from "./ai/providers";
 
 export type OfficeSettings = {
   nameAr: string;
@@ -96,3 +97,4 @@ export async function setSetting(key: string, value: unknown) {
 export const getOffice = () => getSetting<OfficeSettings>("office", DEFAULT_OFFICE);
 export const getDeadlinePresets = () => getSetting<DeadlinePreset[]>("deadlinePresets", DEFAULT_DEADLINE_PRESETS);
 export const getEmailTemplates = () => getSetting<EmailTemplates>("emailTemplates", DEFAULT_EMAIL_TEMPLATES);
+export const getAiSettings = () => getSetting<AiSettings>("ai", DEFAULT_AI);
