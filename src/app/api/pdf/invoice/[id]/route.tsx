@@ -9,10 +9,12 @@ import { BillingDocument } from "@/lib/pdf/billing";
 import { invoiceScope } from "@/server/billing/queries";
 
 export const GET = withErrors(async (req, { params }) => {
-  const user = await apiUser("billing");
+  const user = await apiUser("billing", "view", { portal: true });
   const locale = apiLocale(req);
   const { id } = await params;
-  const inv = await prisma.invoice.findFirst({ where: { AND: [invoiceScope(user), { id }] }, include: { client: true, matter: true, lines: { orderBy: { id: "asc" } } } });
+  // Portal users get their own issued invoices only.
+  const where = user.clientId ? { deletedAt: null, clientId: user.clientId, status: { notIn: ["DRAFT" as const, "CANCELLED" as const] } } : invoiceScope(user);
+  const inv = await prisma.invoice.findFirst({ where: { AND: [where, { id }] }, include: { client: true, matter: true, lines: { orderBy: { id: "asc" } } } });
   if (!inv) throw new HttpError(404);
   const t = await getTranslations({ locale });
   const office = await getOffice();
