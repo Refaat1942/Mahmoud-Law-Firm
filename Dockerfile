@@ -16,7 +16,9 @@ RUN npx prisma generate && npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production TZ=Asia/Dubai
+# Docker sets HOSTNAME to the container id; Next standalone binds to it, so
+# 127.0.0.1 inside the container (used by deploy/vps.sh) would not answer.
+ENV NODE_ENV=production TZ=Asia/Dubai HOSTNAME=0.0.0.0 PORT=3000
 RUN apk add --no-cache postgresql16-client tzdata libc6-compat openssl
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
