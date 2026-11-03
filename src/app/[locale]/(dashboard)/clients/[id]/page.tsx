@@ -16,6 +16,8 @@ import { DateText, Money } from "@/components/format";
 import { DetailList, PageHeader, Section, StatCard, Tabs } from "@/components/page";
 import { addContact, addPoa, deleteClient, deleteContact, deletePoa } from "@/server/clients/actions";
 import { clientStatement } from "@/server/clients/queries";
+import { replyToClient } from "@/server/portal/actions";
+import { MessageThread } from "@/components/message-thread";
 
 /** A tap-to-call number; mobiles also get a WhatsApp link. */
 function PhoneLink({ value, whatsapp }: { value: string; whatsapp?: boolean }) {
@@ -54,12 +56,14 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   if (!client) notFound();
   const canEdit = can(user, "clients", "update");
   const statement = can(user, "billing") ? await clientStatement(id) : null;
+  const unreadMessages = await prisma.message.count({ where: { clientId: id, fromClient: true, readAt: null } });
 
   const tabs = [
     { key: "overview", label: t("common.overview") },
     { key: "matters", label: t("nav.cases") },
     ...(can(user, "billing") ? [{ key: "invoices", label: t("billing.invoices") }, { key: "statement", label: t("clients.statement") }] : []),
     ...(can(user, "documents") ? [{ key: "documents", label: t("nav.documents") }] : []),
+    { key: "messages", label: unreadMessages ? `${t("portal.messages")} (${unreadMessages})` : t("portal.messages") },
   ];
 
   let content: React.ReactNode = null;
@@ -132,6 +136,34 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           ]}
           rows={statement.rows}
         />
+      </div>
+    );
+  } else if (tab === "messages") {
+    const matters = await prisma.matter.findMany({ where: { AND: [matterScope(user), { clientId: id }] }, orderBy: { openedAt: "desc" } });
+    const portalUsers = await prisma.user.count({ where: { clientId: id, deletedAt: null, isActive: true } });
+    // Opening the thread marks the client's messages as read.
+    await prisma.message.updateMany({ where: { clientId: id, fromClient: true, readAt: null }, data: { readAt: new Date() } });
+    content = (
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Section className="lg:col-span-2">
+          <MessageThread clientId={id} side="office" />
+        </Section>
+        <Section title={t("portal.reply")}>
+          {portalUsers === 0 && <p className="mb-3 text-xs text-muted-foreground">{t("portal.noPortalUsers")}</p>}
+          {canEdit && (
+            <EntityForm
+              schema="message"
+              action={replyToClient.bind(null, id)}
+              columns={1}
+              resetOnSuccess
+              submitLabel={t("portal.send")}
+              fields={[
+                { name: "matterId", label: t("f.matter"), type: "select", options: matters.map((m) => ({ value: m.id, label: `${m.fileNo} — ${localizedTitle(m, locale)}` })), placeholder: t("portal.general") },
+                { name: "body", label: t("f.message"), type: "textarea", required: true },
+              ]}
+            />
+          )}
+        </Section>
       </div>
     );
   } else if (tab === "documents") {
