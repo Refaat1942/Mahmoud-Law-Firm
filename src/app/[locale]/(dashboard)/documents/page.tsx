@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Upload } from "lucide-react";
+import { FileText, FileType, Upload } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, requirePermission } from "@/lib/session";
 import { localized } from "@/lib/utils";
@@ -41,11 +41,21 @@ export default async function DocumentsPage() {
       <PageHeader
         title={t("documents.title")}
         actions={
-          can(user, "documents", "create") && (
-            <Link href="/documents/new" className={buttonVariants()}>
-              <Upload /> {t("documents.upload")}
+          <>
+            <Link href="/documents/templates" className={buttonVariants({ variant: "outline" })}>
+              <FileType /> {t("documents.templates")}
             </Link>
-          )
+            {can(user, "documents", "create") && (
+              <>
+                <Link href="/documents/generate" className={buttonVariants({ variant: "outline" })}>
+                  <FileText /> {t("documents.generate")}
+                </Link>
+                <Link href="/documents/new" className={buttonVariants()}>
+                  <Upload /> {t("documents.upload")}
+                </Link>
+              </>
+            )}
+          </>
         }
       />
       <DataTable

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zBool, zDate, zInt, zMoney, zOptText, zText } from "../common";
+import { zBool, zDate, zFile, zInt, zMoney, zOptText, zText } from "../common";
 
 export const officeSchema = z.object({
   nameAr: zText(),
@@ -39,3 +39,8 @@ export const presetSchema = z.object({
 });
 
 export const emailTemplateSchema = z.object({ subjectAr: zText(), subjectEn: zText(), bodyAr: zText(5000), bodyEn: zText(5000) });
+
+/** PNG or JPEG only: react-pdf cannot embed SVG or WebP. */
+export const logoSchema = z.object({
+  file: zFile().refine((f) => /^image\/(png|jpe?g)$/.test(f.type) || /\.(png|jpe?g)$/i.test(f.name), "v.imageOnly"),
+});

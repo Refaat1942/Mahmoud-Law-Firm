@@ -102,7 +102,8 @@
     "dateOrder": "End date is before start date",
     "period": "Period format is YYYY-MM",
     "fileTooLarge": "File is larger than 20 MB",
-    "pdfOnly": "The file must be a PDF"
+    "pdfOnly": "The file must be a PDF",
+    "imageOnly": "The logo must be a PNG or JPG image"
   },
   "errors": {
     "unauthorized": "Your session expired, please sign in again",
@@ -487,7 +488,16 @@
     "clientHelp": "Filled from the case automatically when a case is selected",
     "folderHelp": "e.g. /Memos/Appeal",
     "tagsHelp": "Separate tags with commas",
-    "events": { "uploaded": "Document uploaded: {name}", "newVersion": "New version ({version}) of document: {name}" }
+    "events": { "uploaded": "Document uploaded: {name}", "newVersion": "New version ({version}) of document: {name}", "generated": "Document generated from template: {name}" },
+    "templates": "Templates",
+    "templatesHelp": "Memo, notice and contract templates filled automatically from the case",
+    "noTemplates": "No templates yet",
+    "newTemplate": "New template",
+    "placeholdersHelp": "Available placeholders:",
+    "generateHelp": "Pick a template and a case; the result is saved with the case documents",
+    "chooseTemplate": "Choose a template",
+    "generateSave": "Generate and save to case",
+    "format": "Format"
   },
   "time": {
     "new": "Log time",
@@ -776,5 +786,33 @@
     "sifDraft": "Approve the payroll before creating the WPS file",
     "sifEmployerMissing": "The employer ID or bank code is missing in Settings",
     "sifEmployeesMissing": "Employees without MOHRE person ID, routing code or IBAN: {list}"
+  },
+  "settings": {
+    "tabs": { "office": "Office", "courts": "Courts", "types": "Case types", "holidays": "Public holidays", "numbering": "Numbering", "deadlines": "Legal deadlines", "emails": "Message templates" },
+    "office": "Office details",
+    "addressAr": "Address (Arabic)",
+    "addressEn": "Address (English)",
+    "trnHelp": "15 digits; printed on tax invoices",
+    "wpsHelp": "MOHRE establishment ID, used for the WPS file",
+    "logoCustom": "The uploaded logo is used on PDF letterheads.",
+    "logoDefault": "The default office logo is used on PDF letterheads.",
+    "logoHelp": "PNG or JPG with a transparent or white background",
+    "logoReset": "Use the default logo",
+    "active": "Active",
+    "inactive": "Inactive",
+    "newCourt": "New court",
+    "newType": "New case type",
+    "keyHelp": "Uppercase English letters, digits and _ only, e.g. COMMERCIAL",
+    "holidaysHelp": "Used for legal deadlines: a due date on a holiday moves to the next working day. Hijri holidays are announced yearly, add them here.",
+    "newHoliday": "Add holiday",
+    "document": "Document",
+    "nextNumber": "Next number",
+    "sequences": { "client": "Clients", "matter": "Cases", "invoice": "Tax invoices", "quote": "Quotes", "payment": "Receipts", "creditNote": "Credit notes", "expense": "Expenses", "journal": "Journal entries", "employee": "Employees" },
+    "sequenceHelp": "The next number cannot go back to a number already used this year, so invoice numbers never repeat.",
+    "presetsHelp": "Standard periods offered when adding a legal deadline to a case. Review them against the applicable law.",
+    "newPreset": "New period",
+    "emails": { "hearingReminder": "Hearing reminder", "deadlineReminder": "Legal deadline reminder", "taskReminder": "Task reminder", "expiryReminder": "Document or PoA expiry", "invoiceOverdue": "Overdue invoice" },
+    "emailHelp": "Messages go out in each user's language. Keep the placeholders of the original template (such as matter and date in double braces) as they are.",
+    "sequenceBackwards": "Numbering cannot go back to a used number"
   }
 }
