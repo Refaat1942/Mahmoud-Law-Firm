@@ -14,13 +14,13 @@ import {
   LayoutDashboard,
   ListChecks,
   Receipt,
-  Scale,
   Settings,
   ShieldCheck,
   Timer,
   Users,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +64,9 @@ export function Sidebar({ items, officeName }: { items: { key: string; href: str
         collapsed ? "w-16" : "w-60",
       )}
     >
-      <div className="flex h-14 items-center gap-2 border-b border-white/10 px-4">
-        <Scale className="size-6 shrink-0 text-sidebar-active" />
-        {!collapsed && <span className="truncate font-bold text-white">{officeName}</span>}
+      <div className="flex min-h-14 items-center gap-2 border-b border-white/10 px-3 py-2">
+        <Image src="/logo-mark.png" alt={officeName} width={44} height={43} className="size-11 shrink-0 object-contain" priority />
+        {!collapsed && <span className="line-clamp-2 text-sm font-bold leading-snug text-white">{officeName}</span>}
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
         {items.map((item) => {
