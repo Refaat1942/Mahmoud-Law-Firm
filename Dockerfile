@@ -3,7 +3,7 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci --no-audit --no-fund
+RUN npm ci
 
 FROM node:22-alpine AS build
 RUN apk add --no-cache libc6-compat openssl
