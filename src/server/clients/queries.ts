@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { dec, sum } from "@/lib/money";
+import { COUNTED_PAYMENT } from "../billing/queries";
 
 /** Normalises Arabic letter variants so "أحمد" matches "احمد". */
 export function normalizeArabic(s: string) {
@@ -52,7 +53,7 @@ export async function conflictCheck(q: string) {
 export async function clientStatement(clientId: string) {
   const [invoices, payments, credits, trust] = await Promise.all([
     prisma.invoice.findMany({ where: { clientId, deletedAt: null, status: { notIn: ["DRAFT", "CANCELLED"] } } }),
-    prisma.payment.findMany({ where: { clientId, deletedAt: null } }),
+    prisma.payment.findMany({ where: { ...COUNTED_PAYMENT, clientId } }),
     prisma.creditNote.findMany({ where: { invoice: { clientId } }, include: { invoice: true } }),
     prisma.trustTransaction.findMany({ where: { clientId }, orderBy: { date: "asc" } }),
   ]);
