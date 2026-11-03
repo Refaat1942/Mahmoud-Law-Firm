@@ -1,12 +1,14 @@
 FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl \
+  && npm install -g npm@11.20.0
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci
 
 FROM node:22-alpine AS build
-RUN apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl \
+  && npm install -g npm@11.20.0
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
