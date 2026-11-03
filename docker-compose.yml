@@ -4,6 +4,8 @@ name: mahmoud-law-firm
 
 services:
   app:
+    # Built once and reused by the worker below.
+    image: mahmoud-law-firm:latest
     build: .
     restart: unless-stopped
     # Bind loopback only — nginx on the host proxies the subdomain here.
@@ -24,9 +26,12 @@ services:
       - uploads:/app/uploads
 
   worker:
-    build: .
+    # Same image as the app (no second build); never pulled from a registry.
+    image: mahmoud-law-firm:latest
+    pull_policy: never
     restart: unless-stopped
-    command: ["npx", "tsx", "src/jobs/worker.ts"]
+    # Bundled at build time (dist/worker.js); no TypeScript tooling in the image.
+    command: ["node", "dist/worker.js"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/law_office
