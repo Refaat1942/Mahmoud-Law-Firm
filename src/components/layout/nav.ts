@@ -2,8 +2,8 @@ import type { Module } from "@/lib/rbac";
 
 export type NavItem = { key: string; href: string; icon: string; module: Module };
 
-// Only modules whose pages exist. Add hr, reports and settings back here as each
-// phase ships its routes.
+// Only modules whose pages exist. Add reports and settings back here when their
+// routes ship.
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", href: "/dashboard", icon: "LayoutDashboard", module: "dashboard" },
   { key: "clients", href: "/clients", icon: "Users", module: "clients" },
@@ -15,5 +15,6 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "time", href: "/time", icon: "Timer", module: "time" },
   { key: "billing", href: "/billing", icon: "Receipt", module: "billing" },
   { key: "accounting", href: "/accounting", icon: "Landmark", module: "accounting" },
+  { key: "hr", href: "/hr", icon: "IdCard", module: "hr" },
   { key: "users", href: "/users", icon: "ShieldCheck", module: "users" },
 ];
