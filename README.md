@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mahmoud Law Firm — office management
 
-## Getting Started
+Next.js 15 (App Router) + PostgreSQL/Prisma. Arabic/English with RTL. Built for a single UAE law office.
 
-First, run the development server:
+Default login after seed: `admin@lawoffice.ae` / `Admin@12345` — change this immediately on any live server.
+
+## Local development
 
 ```bash
+npm install
+cp .env.example .env   # AUTH_SECRET must be a long random string
+npm run db:dev         # embedded Postgres on port 5433
+npx prisma migrate deploy
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Production on an existing VPS (`lawfirm.fratelanza.com`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This stack is isolated from other sites on the same machine:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Docker Compose project name is `mahmoud-law-firm` (own network, volumes, containers).
+- Postgres/Redis/MinIO are **not** published on host ports.
+- The app listens only on `127.0.0.1:3017`.
+- nginx/Caddy gets a **new** `server_name` for this subdomain only. Existing vhosts are not replaced.
 
-## Learn More
+DNS: `lawfirm.fratelanza.com` → A record to the VPS (`187.124.15.14`), Cloudflare **DNS only**.
 
-To learn more about Next.js, take a look at the following resources:
+On the VPS (as root):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl -fsSL https://raw.githubusercontent.com/Refaat1942/Mahmoud-Law-Firm/main/deploy/vps.sh | bash
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Or clone and run:
 
-## Deploy on Vercel
+```bash
+git clone https://github.com/Refaat1942/Mahmoud-Law-Firm.git /opt/mahmoud-law-firm
+sudo bash /opt/mahmoud-law-firm/deploy/vps.sh
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Updates later: `sudo bash /opt/mahmoud-law-firm/deploy/vps.sh` (pulls `main` and rebuilds this stack only).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If port `3017` is already used: `LAW_FIRM_PORT=3021 sudo -E bash deploy/vps.sh` and edit the `proxy_pass` port in the nginx file to match.

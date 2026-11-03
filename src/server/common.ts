@@ -46,7 +46,7 @@ export const zInt = (min = 0) => z.preprocess(toNumber, z.number({ errorMap: num
 
 export const zBool = () => z.preprocess((v) => v === true || v === "true" || v === "on", z.boolean());
 
-export const zEnum = <T extends [string, ...string[]]>(values: T) =>
+export const zEnum = <const T extends readonly [string, ...string[]]>(values: T) =>
   z.enum(values, { errorMap: () => ({ message: "v.required" }) });
 
 export const zTags = () =>

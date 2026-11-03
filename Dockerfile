@@ -12,8 +12,8 @@ RUN npx prisma generate && npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
-RUN apk add --no-cache postgresql16-client
+ENV NODE_ENV=production TZ=Asia/Dubai
+RUN apk add --no-cache postgresql16-client tzdata
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public

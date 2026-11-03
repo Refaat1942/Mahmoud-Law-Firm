@@ -28,6 +28,8 @@ export const ENUMS = {
   LeaveType: ["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PARENTAL", "OTHER"],
   ApprovalStatus: ["PENDING", "APPROVED", "REJECTED"],
   PayrollStatus: ["DRAFT", "APPROVED", "PAID"],
+  ExpiryState: ["VALID", "EXPIRING", "EXPIRED"],
+  StatementKind: ["invoice", "payment", "creditNote", "trustApplied"],
   Language: ["ar", "en"],
   Currency: ["AED", "USD", "EUR", "SAR", "GBP"],
   Emirate: ["ABU_DHABI", "DUBAI", "SHARJAH", "AJMAN", "UMM_AL_QUWAIN", "RAS_AL_KHAIMAH", "FUJAIRAH", "FEDERAL"],

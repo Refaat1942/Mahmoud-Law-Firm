@@ -18,10 +18,13 @@ export const decisionSchema = z.object({
   nextPurpose: zOptText(300),
 });
 
-export const deadlineSchema = z.object({
-  title: zText(),
-  kind: zText(40),
-  startDate: zDate(),
-  days: zInt(1),
-  assigneeId: zOptId(),
-});
+/** Title and days may be left empty to take them from the selected preset. */
+export const deadlineSchema = z
+  .object({
+    title: zOptText(300),
+    kind: zText(40),
+    startDate: zDate(),
+    days: z.preprocess((v) => (v === "" || v === null ? undefined : v), zInt(1).optional()),
+    assigneeId: zOptId(),
+  })
+  .refine((d) => d.kind !== "CUSTOM" || (!!d.title && !!d.days), { message: "v.required", path: ["days"] });

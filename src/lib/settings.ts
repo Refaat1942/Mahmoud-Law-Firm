@@ -61,6 +61,12 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplates = {
     bodyAr: "الموعد القانوني {{title}} في القضية {{matter}} ينتهي بتاريخ {{date}}.",
     bodyEn: "The deadline {{title}} in {{matter}} is due on {{date}}.",
   },
+  taskReminder: {
+    subjectAr: "تذكير بمهمة: {{title}}",
+    subjectEn: "Task reminder: {{title}}",
+    bodyAr: "المهمة {{title}} مستحقة بتاريخ {{date}}.",
+    bodyEn: "The task {{title}} is due on {{date}}.",
+  },
   expiryReminder: {
     subjectAr: "تنبيه انتهاء: {{title}}",
     subjectEn: "Expiry notice: {{title}}",

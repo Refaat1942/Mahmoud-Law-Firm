@@ -28,13 +28,19 @@ const declRe = /const\s+(\w+)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslati
 
 for (const file of files) {
   const src = readFileSync(file, "utf8");
-  for (const m of src.matchAll(declRe)) {
-    const [, name, ns1, ns2] = m;
-    const ns = ns1 ?? ns2 ?? "";
+  // A call belongs to the closest preceding declaration of the same variable name.
+  const decls = [...src.matchAll(declRe)].map((m) => ({ name: m[1], ns: m[2] ?? m[3] ?? "", at: m.index }));
+  for (const name of new Set(decls.map((d) => d.name))) {
+    const own = decls.filter((d) => d.name === name);
     const callRe = new RegExp(`\\b${name}(?:\\.rich|\\.raw)?\\(\\s*"([^"]+)"`, "g");
-    for (const c of src.matchAll(callRe)) add(ns ? `${ns}.${c[1]}` : c[1], file);
+    for (const c of src.matchAll(callRe)) {
+      const decl = own.filter((d) => d.at < c.index).at(-1);
+      if (!decl) continue;
+      add(decl.ns ? `${decl.ns}.${c[1]}` : c[1], file);
+    }
   }
   for (const m of src.matchAll(/"((?:v|errors)\.[A-Za-z0-9_]+)"/g)) add(m[1], file);
+  for (const m of src.matchAll(/new ActionError\(\s*"([^"]+)"/g)) add(m[1], file);
 }
 
 const enumsSrc = readFileSync("src/lib/enums.ts", "utf8");
