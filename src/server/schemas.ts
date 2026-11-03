@@ -48,6 +48,7 @@ export const schemas = {
   trust: billing.trustSchema,
   applyTrust: billing.applyTrustSchema,
   account: accounting.accountSchema,
+  journal: accounting.journalSchema,
   expense: accounting.expenseSchema,
   bankAccount: accounting.bankAccountSchema,
   employee: hr.employeeSchema,
