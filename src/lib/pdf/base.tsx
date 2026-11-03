@@ -143,15 +143,22 @@ export function pdfResponse(buf: Buffer, fileName: string, inline = true) {
   });
 }
 
+const BIDI_MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/g;
+
 export function fmtDate(d: Date | string | null | undefined, locale: string, withTime = false) {
   if (!d) return "";
+  // Arabic Intl output embeds RLM marks (U+200F) between date parts; react-pdf reorders the
+  // digits around them ("272026/10/"), so strip all bidi control characters.
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-AE-u-nu-latn" : "en-GB", {
     timeZone: "Asia/Dubai",
     dateStyle: "medium",
     ...(withTime ? { timeStyle: "short" } : {}),
-  }).format(new Date(d));
+  })
+    .format(new Date(d))
+    .replace(BIDI_MARKS, "");
 }
 
 export function fmtMoney(v: unknown, currency = "AED", locale = "en") {
-  return `${new Intl.NumberFormat(locale === "ar" ? "ar-AE-u-nu-latn" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v ?? 0))} ${currency}`;
+  const n = new Intl.NumberFormat(locale === "ar" ? "ar-AE-u-nu-latn" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v ?? 0));
+  return `${n.replace(BIDI_MARKS, "")} ${currency}`;
 }

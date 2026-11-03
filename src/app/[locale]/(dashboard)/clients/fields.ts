@@ -15,7 +15,9 @@ export async function clientFields(): Promise<Field[]> {
     { name: "tradeLicenseNo", label: t("f.tradeLicenseNo"), dir: "ltr", required: true, showIf: { field: "type", values: ["COMPANY"] } },
     { name: "trn", label: t("f.trn"), dir: "ltr", placeholder: "100XXXXXXXXXXXX" },
     { name: "email", label: t("f.email"), type: "email" },
-    { name: "phone", label: t("f.phone"), type: "tel", placeholder: "+971 5X XXX XXXX" },
+    { name: "mobile", label: t("f.mobile"), type: "tel", placeholder: "+971 5X XXX XXXX" },
+    { name: "phone", label: t("f.phone"), type: "tel", placeholder: "+971 X XXX XXXX" },
+    { name: "altPhone", label: t("f.altPhone"), type: "tel" },
     { name: "address", label: t("f.address"), span: 2 },
     { name: "notes", label: t("f.notes"), type: "textarea" },
   ];
