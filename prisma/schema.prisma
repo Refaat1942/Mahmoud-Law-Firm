@@ -682,6 +682,11 @@ model InvoiceLine {
   vatRate     Decimal  @db.Decimal(5, 2)
   amount      Decimal  @db.Decimal(14, 2)
   vatAmount   Decimal  @db.Decimal(14, 2)
+  /// Where an imported line came from ("time", "expense", "installment"); removing the line releases it.
+  sourceType  String?
+  sourceId    String?
+
+  @@index([sourceType, sourceId])
 }
 
 enum PaymentMethod {
