@@ -54,6 +54,8 @@ EOF
 fi
 
 mkdir -p backups
+# BuildKit cache mounts in the Dockerfile keep npm and Next.js caches between updates.
+export DOCKER_BUILDKIT=1
 docker compose up -d --build
 
 # `docker compose exec` reads stdin. Under `curl ... | bash` stdin is this script,
@@ -72,7 +74,7 @@ if [[ "$ready" != true ]]; then
 fi
 
 echo "Seeding base data (admin user, roles, settings)..."
-docker compose exec -T app npx prisma db seed </dev/null || true
+docker compose exec -T app node dist/seed.js </dev/null || true
 
 if command -v nginx >/dev/null 2>&1; then
   SITE_SRC="${APP_DIR}/deploy/nginx-lawfirm.fratelanza.com.conf"
@@ -97,6 +99,9 @@ elif command -v caddy >/dev/null 2>&1; then
 else
   echo "No nginx/caddy found. Install a reverse proxy and point ${DOMAIN} at 127.0.0.1:${PORT}"
 fi
+
+# Drop the image this update replaced (dangling images of this project only).
+docker image prune -f --filter "label=com.docker.compose.project=mahmoud-law-firm" >/dev/null 2>&1 || true
 
 echo
 echo "Stack: docker compose -p mahmoud-law-firm ps"
