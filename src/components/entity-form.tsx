@@ -25,7 +25,8 @@ export type FieldType =
   | "textarea"
   | "select"
   | "checkbox"
-  | "tags";
+  | "tags"
+  | "file";
 
 export type Field = {
   name: string;
@@ -57,6 +58,7 @@ function prepareDefaults(fields: Field[], values: Record<string, unknown>) {
     else if (f.type === "date") out[f.name] = String(v).slice(0, 10);
     else if (f.type === "datetime") out[f.name] = toLocalInput(String(v));
     else if (f.type === "tags") out[f.name] = Array.isArray(v) ? v.join(", ") : String(v);
+    else if (f.type === "file") out[f.name] = undefined;
     else out[f.name] = typeof v === "number" ? String(v) : v;
   }
   return out;
@@ -100,9 +102,23 @@ export function EntityForm({
 
   const submit = handleSubmit((values) => {
     setFormError(null);
-    const payload: Record<string, unknown> = { ...values };
+    const data: Record<string, unknown> = { ...values };
     for (const f of fields) {
-      if (f.type === "datetime" && payload[f.name]) payload[f.name] = new Date(String(payload[f.name])).toISOString();
+      if (f.type === "datetime" && data[f.name]) data[f.name] = new Date(String(data[f.name])).toISOString();
+    }
+    // Forms with a file field are sent as FormData, which server actions accept natively.
+    let payload: unknown = data;
+    if (fields.some((f) => f.type === "file")) {
+      const fd = new FormData();
+      for (const [k, v] of Object.entries(data)) {
+        if (v === undefined || v === null) continue;
+        // The Zod resolver may already have turned the FileList into a File.
+        if (v instanceof Blob) fd.append(k, v);
+        else if (typeof FileList !== "undefined" && v instanceof FileList) {
+          if (v[0]) fd.append(k, v[0]);
+        } else fd.append(k, String(v));
+      }
+      payload = fd;
     }
     startTransition(async () => {
       const res = await action(payload);
@@ -155,6 +171,8 @@ export function EntityForm({
                         </option>
                       ))}
                     </Select>
+                  ) : f.type === "file" ? (
+                    <Input {...common} type="file" className="cursor-pointer file:me-3 file:border-0 file:bg-transparent file:text-sm file:font-medium" />
                   ) : (
                     <Input
                       {...common}

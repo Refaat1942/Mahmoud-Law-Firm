@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { FileText, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/session";
 import { Link } from "@/i18n/navigation";
@@ -17,9 +17,7 @@ export async function DocumentsTab({ matterId, user }: TabProps) {
           <Link href={`/documents/new?matterId=${matterId}`} className={buttonVariants()}>
             <Upload /> {t("documents.upload")}
           </Link>
-          <Link href={`/documents/generate?matterId=${matterId}`} className={buttonVariants({ variant: "outline" })}>
-            <FileText /> {t("documents.generate")}
-          </Link>
+          {/* "Generate from template" returns with the templates phase (/documents/generate). */}
         </div>
       )}
       <DataTable

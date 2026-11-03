@@ -60,3 +60,18 @@ export const zTags = () =>
             .filter(Boolean),
     z.array(z.string().max(50)),
   );
+
+// Below the 25 MB server-action and nginx body limits, leaving room for the form fields.
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+const firstFile = (v: unknown) => (typeof FileList !== "undefined" && v instanceof FileList ? v[0] : v);
+
+/** A single uploaded file (FileList from the browser form, File on the server). */
+export const zFile = () =>
+  z.preprocess(
+    firstFile,
+    z
+      // Duck-typed: the server runtime's File class is not always the global one.
+      .custom<File>((v) => !!v && typeof v === "object" && typeof (v as File).arrayBuffer === "function" && typeof (v as File).name === "string" && (v as File).size > 0, "v.required")
+      .refine((f) => f.size <= MAX_UPLOAD_BYTES, "v.fileTooLarge"),
+  );

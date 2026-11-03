@@ -39,7 +39,9 @@ export function defineAction<S extends z.ZodTypeAny, B extends unknown[] = []>(
       return { ok: false, error: "errors.forbidden" };
     }
 
-    const payload = args[args.length - 1];
+    const raw = args[args.length - 1];
+    // File uploads arrive as FormData; flatten it so the Zod schema sees plain fields (and File values).
+    const payload = raw instanceof FormData ? Object.fromEntries(raw.entries()) : raw;
     const bound = args.slice(0, -1) as B;
     let input: z.infer<S> = payload as z.infer<S>;
     if (opts.schema) {
