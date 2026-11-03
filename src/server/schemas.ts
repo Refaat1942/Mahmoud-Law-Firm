@@ -35,6 +35,8 @@ export const schemas = {
   task: tasks.taskSchema,
   comment: tasks.commentSchema,
   document: documents.documentSchema,
+  documentUpload: documents.documentUploadSchema,
+  documentVersion: documents.versionSchema,
   template: documents.templateSchema,
   timeEntry: time.timeEntrySchema,
   rate: time.rateSchema,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zBool, zEnum, zId, zOptId, zOptText, zTags, zText } from "../common";
+import { zBool, zEnum, zFile, zId, zOptId, zOptText, zTags, zText } from "../common";
 
 export const DOCUMENT_CATEGORIES = ["MEMO", "JUDGMENT", "CONTRACT", "POWER_OF_ATTORNEY", "EVIDENCE", "CORRESPONDENCE", "ID_DOCUMENT", "OTHER"] as const;
 
@@ -12,6 +12,11 @@ export const documentSchema = z.object({
   tags: zTags(),
   visibleToClient: zBool(),
 });
+
+/** Name defaults to the file name when left empty. */
+export const documentUploadSchema = documentSchema.extend({ name: zOptText(300), file: zFile() });
+
+export const versionSchema = z.object({ file: zFile() });
 
 export const templateSchema = z.object({
   name: zText(),
