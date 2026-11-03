@@ -3,6 +3,14 @@ import { hash } from "@node-rs/argon2";
 import { DEFAULT_ROLES } from "../src/lib/rbac";
 import { SEQUENCE_DEFAULTS } from "../src/lib/sequence";
 import { DEFAULT_DEADLINE_PRESETS, DEFAULT_EMAIL_TEMPLATES, DEFAULT_OFFICE } from "../src/lib/settings";
+
+const OFFICE_PROFILE = {
+  nameAr: "مكتب مريم مبارك النوفلي للمحاماة",
+  nameEn: "Maryam M. Al Noufli Law Firm",
+  addressAr: "أبوظبي - شارع خليفة - خلف بنك أبوظبي الأول (FAB) - الطابق العاشر - مكتب 1006",
+  addressEn: "Office 1006, 10th Floor, behind FAB Bank, Khalifa Street, Abu Dhabi, UAE",
+};
+const PLACEHOLDER_OFFICE_NAME_EN = "Vision Advocates & Legal Consultants";
 import { seedDemo } from "./seed-demo";
 
 const prisma = new PrismaClient();
@@ -142,12 +150,20 @@ async function main() {
   }
 
   const settings: Record<string, unknown> = {
-    office: { ...DEFAULT_OFFICE, nameAr: "مكتب الرؤية للمحاماة والاستشارات القانونية", nameEn: "Vision Advocates & Legal Consultants" },
+    office: { ...DEFAULT_OFFICE, ...OFFICE_PROFILE },
     deadlinePresets: DEFAULT_DEADLINE_PRESETS,
     emailTemplates: DEFAULT_EMAIL_TEMPLATES,
   };
   for (const [key, value] of Object.entries(settings)) {
     await prisma.setting.upsert({ where: { key }, create: { key, value: value as object }, update: {} });
+  }
+
+  // Databases seeded before the office profile was set still carry the placeholder
+  // name; replace it once. Offices that already edited their name are left alone.
+  const office = await prisma.setting.findUnique({ where: { key: "office" } });
+  const current = (office?.value ?? {}) as Record<string, unknown>;
+  if (current.nameEn === PLACEHOLDER_OFFICE_NAME_EN) {
+    await prisma.setting.update({ where: { key: "office" }, data: { value: { ...current, ...OFFICE_PROFILE } } });
   }
 
   if (process.env.SEED_DEMO !== "false") await seedDemo(prisma);

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readFile } from "node:fs/promises";
 import type { ReactNode } from "react";
 import { Document, Font, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { OfficeSettings } from "@/lib/settings";
@@ -113,9 +114,15 @@ export function PdfTable<T>({ columns, rows, rtl }: { columns: PdfColumn<T>[]; r
 
 /** PNG/JPEG logo only; react-pdf cannot embed SVG or WebP images. */
 export async function loadLogo(office: OfficeSettings) {
-  if (!office.logoKey || !/\.(png|jpe?g)$/i.test(office.logoKey)) return null;
+  if (office.logoKey && /\.(png|jpe?g)$/i.test(office.logoKey)) {
+    try {
+      return await getFileBuffer(office.logoKey);
+    } catch {
+      // fall through to the bundled logo
+    }
+  }
   try {
-    return await getFileBuffer(office.logoKey);
+    return await readFile(path.join(process.cwd(), "public", "logo.png"));
   } catch {
     return null;
   }
