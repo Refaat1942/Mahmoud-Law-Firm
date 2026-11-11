@@ -4,7 +4,8 @@ import type { CurrentUser } from "@/lib/session";
 import { EntityForm } from "./entity-form";
 import { Section } from "./page";
 import { TwoFactorSetup } from "./two-factor-setup";
-import { changePassword, updateProfile } from "@/server/users/actions";
+import { changePassword, updateNotificationPrefs, updateProfile } from "@/server/users/actions";
+import { NOTIFICATION_TYPES } from "@/server/users/schema";
 
 export async function ProfilePanel({ user }: { user: CurrentUser }) {
   const t = await getTranslations();
@@ -36,6 +37,18 @@ export async function ProfilePanel({ user }: { user: CurrentUser }) {
         />
       </Section>
       <div className="space-y-5">
+        <Section title={t("profile.notifications")}>
+          <EntityForm
+            schema="notificationPrefs"
+            action={updateNotificationPrefs}
+            columns={1}
+            defaultValues={{ whatsapp: false, emailOff: [], ...((row.notificationPrefs ?? {}) as object) }}
+            fields={[
+              { name: "whatsapp", label: t("profile.whatsappOptIn"), type: "checkbox", help: t("profile.whatsappHelp") },
+              { name: "emailOff", label: t("profile.emailOff"), type: "multiselect", options: NOTIFICATION_TYPES.map((v) => ({ value: v, label: t(`profile.types.${v}`) })), help: t("profile.emailOffHelp") },
+            ]}
+          />
+        </Section>
         <Section title={t("profile.password")}>
           <EntityForm
             schema="passwordChange"

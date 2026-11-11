@@ -7,7 +7,7 @@ import { localized, localizedTitle } from "@/lib/utils";
 import { daysUntil } from "@/lib/deadlines";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, STATUS_TONES } from "@/components/ui/badge";
 import { Table, Td, Th } from "@/components/ui/table";
 import { DataTable } from "@/components/data-table";
 import { EntityForm } from "@/components/entity-form";
@@ -15,10 +15,10 @@ import { ActionButton } from "@/components/action-button";
 import { DateText, Money } from "@/components/format";
 import { DetailList, PageHeader, Section, StatCard, Tabs } from "@/components/page";
 import { addContact, addPoa, deleteClient, deleteContact, deletePoa, setPoaVerified } from "@/server/clients/actions";
-import { clientStatement } from "@/server/clients/queries";
+import { clientStatement, normalizeArabic } from "@/server/clients/queries";
 import { invoiceScope } from "@/server/billing/queries";
 import { documentScope } from "@/server/documents/queries";
-import { replyToClient } from "@/server/portal/actions";
+import { cancelApproval, replyToClient, requestApproval } from "@/server/portal/actions";
 import { MessageThread } from "@/components/message-thread";
 
 /** A tap-to-call number; mobiles also get a WhatsApp link. */
@@ -59,12 +59,26 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const canEdit = can(user, "clients", "update");
   const statement = can(user, "billing") ? await clientStatement(id) : null;
   const unreadMessages = await prisma.message.count({ where: { clientId: id, fromClient: true, readAt: null } });
+  const pendingApprovals = await prisma.clientApproval.count({ where: { clientId: id, status: "PENDING" } });
+  // Possible duplicates: same name (Arabic letter variants ignored) or same mobile number.
+  const nameKey = normalizeArabic(client.nameAr);
+  const duplicates = await prisma.client.findMany({
+    where: {
+      deletedAt: null,
+      id: { not: id },
+      OR: [{ nameAr: { equals: client.nameAr, mode: "insensitive" } }, ...(client.nameEn ? [{ nameEn: { equals: client.nameEn, mode: "insensitive" as const } }] : []), ...(client.mobile ? [{ mobile: client.mobile }] : [])],
+    },
+    take: 5,
+  });
+  const similar = await prisma.client.findMany({ where: { deletedAt: null, id: { not: id }, nameAr: { contains: nameKey.split(" ")[0] } }, take: 200, select: { id: true, nameAr: true, nameEn: true, code: true, mobile: true } });
+  for (const c of similar) if (normalizeArabic(c.nameAr) === nameKey && !duplicates.some((d) => d.id === c.id)) duplicates.push(c as (typeof duplicates)[number]);
 
   const tabs = [
     { key: "overview", label: t("common.overview") },
     { key: "matters", label: t("nav.cases") },
     ...(can(user, "billing") ? [{ key: "invoices", label: t("billing.invoices") }, { key: "statement", label: t("clients.statement") }] : []),
     ...(can(user, "documents") ? [{ key: "documents", label: t("nav.documents") }] : []),
+    { key: "approvals", label: pendingApprovals ? `${t("approvals.title")} (${pendingApprovals})` : t("approvals.title") },
     { key: "messages", label: unreadMessages ? `${t("portal.messages")} (${unreadMessages})` : t("portal.messages") },
   ];
 
@@ -138,6 +152,63 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           ]}
           rows={statement.rows}
         />
+      </div>
+    );
+  } else if (tab === "approvals") {
+    const [approvals, matters] = await Promise.all([
+      prisma.clientApproval.findMany({ where: { clientId: id }, orderBy: { createdAt: "desc" } }),
+      prisma.matter.findMany({ where: { AND: [matterScope(user), { clientId: id }] }, orderBy: { openedAt: "desc" } }),
+    ]);
+    const fileNo = new Map(matters.map((m) => [m.id, m.fileNo]));
+    content = (
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Section className="lg:col-span-2" title={t("approvals.title")}>
+          {approvals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("approvals.none")}</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {approvals.map((a) => (
+                <li key={a.id} className="space-y-1 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{a.title}</span>
+                    <Badge tone={STATUS_TONES[a.status] ?? "neutral"}>{t(`enum.ApprovalState.${a.status}`)}</Badge>
+                    {a.matterId && fileNo.get(a.matterId) && <span className="text-xs text-muted-foreground">{fileNo.get(a.matterId)}</span>}
+                    <span className="ms-auto text-xs text-muted-foreground">
+                      <DateText value={a.createdAt} />
+                    </span>
+                    {canEdit && a.status === "PENDING" && (
+                      <ActionButton size="sm" variant="ghost" action={cancelApproval.bind(null, a.id)} confirm={t("common.confirmDelete")}>
+                        {t("common.cancel")}
+                      </ActionButton>
+                    )}
+                  </div>
+                  {a.details && <p className="whitespace-pre-wrap text-muted-foreground">{a.details}</p>}
+                  {a.respondedAt && (
+                    <p className="rounded bg-muted/50 p-2">
+                      <DateText value={a.respondedAt} withTime /> — {a.response || t(`enum.ApprovalState.${a.status}`)}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+        {canEdit && (
+          <Section title={t("approvals.request")}>
+            <p className="mb-3 text-xs text-muted-foreground">{t("approvals.requestHelp")}</p>
+            <EntityForm
+              schema="approvalRequest"
+              action={requestApproval.bind(null, id)}
+              resetOnSuccess
+              columns={1}
+              fields={[
+                { name: "title", label: t("f.title"), required: true },
+                { name: "matterId", label: t("f.matter"), type: "select", options: matters.map((m) => ({ value: m.id, label: `${m.fileNo} — ${localizedTitle(m, locale)}` })) },
+                { name: "details", label: t("f.description"), type: "textarea" },
+              ]}
+            />
+          </Section>
+        )}
       </div>
     );
   } else if (tab === "messages") {
@@ -390,6 +461,19 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           </>
         }
       />
+      {duplicates.length > 0 && (
+        <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+          <span className="font-medium">{t("clients.possibleDuplicates")}: </span>
+          {duplicates.map((d, i) => (
+            <span key={d.id}>
+              {i > 0 && "، "}
+              <Link href={`/clients/${d.id}`} className="text-primary hover:underline dark:text-accent">
+                {localized(d, locale)} ({d.code})
+              </Link>
+            </span>
+          ))}
+        </div>
+      )}
       <Tabs tabs={tabs} active={tab} base={`/clients/${id}`} />
       {content}
     </>

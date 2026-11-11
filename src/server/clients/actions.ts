@@ -9,7 +9,19 @@ import { clientSchema, contactSchema, partySchema, poaSchema } from "./schema";
 
 const normalizeEid = (v?: string) => (v ? v.replace(/^(784)-?(\d{4})-?(\d{7})-?(\d)$/, "$1-$2-$3-$4") : v);
 
+/** Blocks a second client with the same Emirates ID, trade licence or TRN (the identifiers that must be unique). */
+async function assertNoDuplicate(input: { emiratesId?: string; tradeLicenseNo?: string; trn?: string }, exceptId?: string) {
+  const eid = normalizeEid(input.emiratesId);
+  const or = [eid && { emiratesId: eid }, input.tradeLicenseNo && { tradeLicenseNo: { equals: input.tradeLicenseNo, mode: "insensitive" as const } }, input.trn && { trn: input.trn }].filter(
+    Boolean,
+  ) as object[];
+  if (!or.length) return;
+  const dup = await prisma.client.findFirst({ where: { deletedAt: null, OR: or, ...(exceptId ? { id: { not: exceptId } } : {}) } });
+  if (dup) throw new ActionError("clients.duplicate");
+}
+
 export const createClient = defineAction({ module: "clients", perm: "create", entity: "Client", schema: clientSchema }, async (input, { user }) => {
+  await assertNoDuplicate(input);
   const client = await prisma.$transaction(async (tx) =>
     tx.client.create({ data: { ...input, emiratesId: normalizeEid(input.emiratesId), code: await nextNumber("client", tx), createdById: user.id } }),
   );
@@ -17,6 +29,7 @@ export const createClient = defineAction({ module: "clients", perm: "create", en
 });
 
 export const updateClient = defineAction({ module: "clients", perm: "update", entity: "Client", schema: clientSchema }, async (input, _c, id: string) => {
+  await assertNoDuplicate(input, id);
   await prisma.client.update({ where: { id }, data: { ...input, emiratesId: normalizeEid(input.emiratesId) } });
   return { id };
 });

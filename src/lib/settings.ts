@@ -92,6 +92,30 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplates = {
     bodyAr: "موعد متابعة {{title}} في القضية {{matter}} بتاريخ {{date}}.",
     bodyEn: "Follow up {{title}} in {{matter}} on {{date}}.",
   },
+  installmentDue: {
+    subjectAr: "دفعة أتعاب مستحقة: {{matter}}",
+    subjectEn: "Fee instalment due: {{matter}}",
+    bodyAr: "دفعة أتعاب بقيمة {{amount}} في القضية {{matter}} مستحقة بتاريخ {{date}} ولم تُفوتر بعد.",
+    bodyEn: "A fee instalment of {{amount}} on {{matter}} is due on {{date}} and is not invoiced yet.",
+  },
+  chequeDue: {
+    subjectAr: "شيك مستحق للإيداع: {{number}}",
+    subjectEn: "Cheque due for deposit: {{number}}",
+    bodyAr: "الشيك رقم {{number}} من {{client}} بمبلغ {{amount}} يستحق بتاريخ {{date}}.",
+    bodyEn: "Cheque {{number}} from {{client}} for {{amount}} is due on {{date}}.",
+  },
+  taskEscalation: {
+    subjectAr: "مهمة متأخرة: {{title}}",
+    subjectEn: "Overdue task: {{title}}",
+    bodyAr: "المهمة {{title}} المسندة إلى {{assignee}} متأخرة منذ {{date}}.",
+    bodyEn: "The task {{title}} assigned to {{assignee}} has been overdue since {{date}}.",
+  },
+  collectionFollowUp: {
+    subjectAr: "متابعة تحصيل: {{client}}",
+    subjectEn: "Collection follow-up: {{client}}",
+    bodyAr: "موعد متابعة تحصيل مستحقات {{client}} بتاريخ {{date}}. آخر نتيجة: {{outcome}}",
+    bodyEn: "Collection follow-up for {{client}} on {{date}}. Last outcome: {{outcome}}",
+  },
   invoiceOverdue: {
     subjectAr: "فاتورة متأخرة: {{number}}",
     subjectEn: "Overdue invoice: {{number}}",

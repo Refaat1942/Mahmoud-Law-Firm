@@ -10,7 +10,7 @@ import { ACTIONS, MODULES } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
 import { audit } from "@/lib/audit";
 import { getOffice } from "@/lib/settings";
-import { passwordChangeSchema, profileSchema, roleSchema, totpSchema, userCreateSchema, userUpdateSchema } from "./schema";
+import { notificationPrefsSchema, passwordChangeSchema, profileSchema, roleSchema, totpSchema, userCreateSchema, userUpdateSchema } from "./schema";
 
 export const createUser = defineAction({ module: "users", perm: "create", entity: "User", schema: userCreateSchema }, async (input, { user }) => {
   const { password, ...data } = input;
@@ -148,5 +148,15 @@ export async function disableTotp(): Promise<Result> {
 export async function markNotificationsRead(): Promise<Result> {
   const user = await self();
   await prisma.notification.updateMany({ where: { userId: user.id, readAt: null }, data: { readAt: new Date() } });
+  return { ok: true };
+}
+
+/** The signed-in user's notification channels: WhatsApp opt-in and email per notification type. */
+export async function updateNotificationPrefs(input: unknown): Promise<Result> {
+  const user = await self();
+  const parsed = notificationPrefsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "errors.validation", fieldErrors: fieldErrors(parsed.error) };
+  await prisma.user.update({ where: { id: user.id }, data: { notificationPrefs: parsed.data } });
+  await audit({ userId: user.id, action: "update", entity: "NotificationPrefs", entityId: user.id, data: parsed.data });
   return { ok: true };
 }

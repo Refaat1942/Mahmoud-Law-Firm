@@ -27,6 +27,8 @@ model User {
   lockedUntil  DateTime?
   lastLoginAt  DateTime?
   locale       String    @default("ar")
+  /// Per-user notification preferences: { emailOff: string[] (notification types), whatsapp: boolean }.
+  notificationPrefs Json?
   createdById  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -139,6 +141,8 @@ model Client {
   messages       Message[]
   appointments   Appointment[]
   notices        LegalNotice[]
+  collectionNotes CollectionNote[]
+  approvals      ClientApproval[]
 
   @@index([nameAr])
   @@index([nameEn])
@@ -430,6 +434,8 @@ model Task {
   createdBy   User?         @relation("TaskCreator", fields: [createdById], references: [id])
   completedAt DateTime?
   reminderSent Boolean      @default(false)
+  /// Set when an overdue task was escalated to its creator and the case lead.
+  escalatedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
@@ -592,6 +598,7 @@ model FeeInstallment {
   description String?
   invoiceId   String?
   invoice     Invoice?     @relation(fields: [invoiceId], references: [id])
+  reminderSent Boolean     @default(false)
 }
 
 // ───────────── Billing ─────────────
@@ -1089,6 +1096,10 @@ model Notification {
   body      String?
   link      String?
   readAt    DateTime?
+  /// Delivery per channel: SENT, FAILED, SKIPPED (no address/not configured) or OFF (user preference).
+  emailStatus    String?
+  whatsappStatus String?
+  deliveryError  String?
   createdAt DateTime  @default(now())
 
   @@index([userId, readAt])
@@ -1383,4 +1394,61 @@ model CourtUpdate {
   @@unique([source, externalId])
   @@index([status, createdAt])
   @@index([courtCaseNo])
+}
+
+// ───────────── Collections and client approvals ─────────────
+
+enum CollectionAction {
+  CALL
+  EMAIL
+  WHATSAPP
+  VISIT
+  LETTER
+  LEGAL_ACTION
+  OTHER
+}
+
+/// A collection follow-up on a client's outstanding balance (optionally one invoice).
+model CollectionNote {
+  id             String           @id @default(cuid())
+  clientId       String
+  client         Client           @relation(fields: [clientId], references: [id])
+  invoiceId      String?
+  date           DateTime
+  action         CollectionAction
+  outcome        String
+  promisedAmount Decimal?         @db.Decimal(14, 2)
+  promisedDate   DateTime?
+  nextFollowUp   DateTime?
+  assigneeId     String?
+  createdById    String?
+  reminderSent   Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  @@index([clientId, date])
+  @@index([nextFollowUp])
+}
+
+enum ApprovalState {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+/// A decision or acknowledgment the firm asks a client for through the portal.
+model ClientApproval {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  matterId      String?
+  title         String
+  details       String?
+  status        ApprovalState @default(PENDING)
+  response      String?
+  respondedAt   DateTime?
+  respondedById String?
+  requestedById String?
+  createdAt     DateTime      @default(now())
+
+  @@index([clientId, status])
 }

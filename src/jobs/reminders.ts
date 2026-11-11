@@ -5,6 +5,8 @@ import { addDays, startOfDay } from "@/lib/utils";
 
 const EXPIRY_WINDOW_DAYS = 30;
 const OVERDUE_REPEAT_DAYS = 7;
+/** Overdue tasks are escalated to their creator and the case lead after this many days. */
+const ESCALATE_AFTER_DAYS = 3;
 
 function fmt(d: Date, withTime = false) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -40,7 +42,7 @@ async function matterRecipients(matter: { responsibleId: string | null; members:
 export async function runReminders(now = new Date()) {
   const office = await getOffice();
   const horizon = addDays(startOfDay(now), office.reminderDaysBefore + 1);
-  const counts = { hearings: 0, deadlines: 0, tasks: 0, appointments: 0, notices: 0, filings: 0, poa: 0, employeeDocs: 0, invoices: 0 };
+  const counts = { hearings: 0, deadlines: 0, tasks: 0, appointments: 0, notices: 0, filings: 0, installments: 0, cheques: 0, escalations: 0, collections: 0, poa: 0, employeeDocs: 0, invoices: 0 };
 
   const hearings = await prisma.hearing.findMany({
     where: { deletedAt: null, status: "SCHEDULED", reminderSent: false, date: { gte: now, lt: horizon }, matter: { deletedAt: null } },
@@ -135,6 +137,56 @@ export async function runReminders(now = new Date()) {
     }
     await prisma.courtFiling.update({ where: { id: f.id }, data: { reminderSent: true } });
     counts.filings++;
+  }
+
+  const billingUsers = await usersWith("billing", "update");
+  const installments = await prisma.feeInstallment.findMany({
+    where: { invoiceId: null, reminderSent: false, dueDate: { lt: horizon }, agreement: { matter: { deletedAt: null, status: { not: "CLOSED" } } } },
+    include: { agreement: { include: { matter: { include: { members: true } } } } },
+  });
+  for (const i of installments) {
+    const m = i.agreement.matter;
+    for (const userId of new Set([...(await matterRecipients(m)), ...billingUsers])) {
+      await notify({ userId, type: "installment", template: "installmentDue", vars: { matter: m.fileNo, amount: `${i.amount.toFixed(2)} AED`, date: fmt(i.dueDate) }, link: `/cases/${m.id}?tab=fees` });
+    }
+    await prisma.feeInstallment.update({ where: { id: i.id }, data: { reminderSent: true } });
+    counts.installments++;
+  }
+
+  const cheques = await prisma.payment.findMany({
+    where: { deletedAt: null, chequeStatus: "PENDING", chequeDueDate: { lt: horizon } },
+    include: { client: true },
+  });
+  for (const c of cheques) {
+    const link = "/billing/payments";
+    let sent = false;
+    for (const userId of billingUsers) {
+      if (await recentlyNotified(userId, `cheque:${c.id}`, link, 30)) continue;
+      await notify({ userId, type: `cheque:${c.id}`, template: "chequeDue", vars: { number: c.chequeNo ?? c.number, client: c.client.nameAr, amount: `${c.amount.toFixed(2)}`, date: fmt(c.chequeDueDate!) }, link });
+      sent = true;
+    }
+    if (sent) counts.cheques++;
+  }
+
+  const overdueTasks = await prisma.task.findMany({
+    where: { deletedAt: null, status: { not: "DONE" }, escalatedAt: null, dueDate: { lt: addDays(startOfDay(now), -ESCALATE_AFTER_DAYS) } },
+    include: { assignee: true, matter: true },
+  });
+  for (const task of overdueTasks) {
+    const recipients = new Set([task.createdById, task.matter?.responsibleId].filter((u): u is string => !!u && u !== task.assigneeId));
+    for (const userId of recipients) {
+      await notify({ userId, type: "escalation", template: "taskEscalation", vars: { title: task.title, assignee: task.assignee?.nameAr ?? "-", date: fmt(task.dueDate!) }, link: `/tasks/${task.id}` });
+    }
+    await prisma.task.update({ where: { id: task.id }, data: { escalatedAt: now } });
+    counts.escalations++;
+  }
+
+  const followUps = await prisma.collectionNote.findMany({ where: { reminderSent: false, nextFollowUp: { lt: horizon } }, include: { client: true } });
+  for (const n of followUps) {
+    const userId = n.assigneeId ?? n.createdById;
+    if (userId) await notify({ userId, type: "collection", template: "collectionFollowUp", vars: { client: n.client.nameAr, date: fmt(n.nextFollowUp!), outcome: n.outcome }, link: `/billing/collections?client=${n.clientId}` });
+    await prisma.collectionNote.update({ where: { id: n.id }, data: { reminderSent: true } });
+    counts.collections++;
   }
 
   const expiryHorizon = addDays(startOfDay(now), EXPIRY_WINDOW_DAYS);

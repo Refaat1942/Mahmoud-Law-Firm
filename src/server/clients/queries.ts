@@ -16,7 +16,11 @@ export function normalizeArabic(s: string) {
 function variants(q: string) {
   const n = normalizeArabic(q);
   const set = new Set([q.trim(), n]);
-  if (n.includes("ا")) set.add(n.replace(/ا/g, "أ"));
+  // Hamza is usually written only on a word-initial alef (أحمد، إبراهيم), so only that alef is varied.
+  if (/(^|\s)ا/.test(n)) {
+    set.add(n.replace(/(^|\s)ا/g, "$1أ"));
+    set.add(n.replace(/(^|\s)ا/g, "$1إ"));
+  }
   if (n.includes("ه")) set.add(n.replace(/ه$/g, "ة"));
   return [...set].filter((s) => s.length >= 2);
 }

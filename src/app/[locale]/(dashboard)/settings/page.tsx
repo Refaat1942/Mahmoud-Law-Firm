@@ -6,6 +6,7 @@ import { getAiSettings, getDeadlinePresets, getEmailTemplates, getOffice } from 
 import { decryptSecret, maskSecret } from "@/lib/crypto";
 import { AI_PROVIDERS } from "@/lib/ai/providers";
 import { AiTestButton } from "@/components/ai-test-button";
+import { getWhatsAppSettings } from "@/lib/whatsapp";
 import { clearAiKey, saveAiSettings, testAiConnection } from "@/server/ai/actions";
 import { SEQUENCE_DEFAULTS, formatNumber } from "@/lib/sequence";
 import { localized } from "@/lib/utils";
@@ -31,10 +32,12 @@ import {
   updateCourt,
   updateMatterType,
   updateSequence,
+  saveWhatsAppSettings,
+  testWhatsApp,
   uploadLogo,
 } from "@/server/settings/actions";
 
-const TABS = ["office", "ai", "courts", "types", "holidays", "numbering", "deadlines", "emails"] as const;
+const TABS = ["office", "ai", "notifications", "courts", "types", "holidays", "numbering", "deadlines", "emails"] as const;
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; edit?: string }> }) {
   const user = await requirePermission("settings");
@@ -137,6 +140,38 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </div>
           )}
           <p className="mt-4 text-xs text-muted-foreground">{t("assistant.privacy")}</p>
+        </Section>
+      </div>
+    );
+  } else if (tab === "notifications") {
+    const wa = await getWhatsAppSettings();
+    const token = decryptSecret(wa.accessTokenEnc);
+    content = (
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Section title={t("settings.whatsappTitle")} className="xl:col-span-2">
+          <p className="mb-4 text-sm text-muted-foreground">{t("settings.whatsappHelp")}</p>
+          <EntityForm
+            schema="whatsappSettings"
+            action={saveWhatsAppSettings}
+            defaultValues={{ ...wa, accessToken: "" }}
+            fields={[
+              { name: "enabled", label: t("settings.whatsappEnabled"), type: "checkbox", span: 2 },
+              { name: "phoneNumberId", label: t("settings.phoneNumberId"), dir: "ltr" },
+              { name: "accessToken", label: t("settings.accessToken"), type: "password", dir: "ltr", help: token ? t("assistant.keySet", { mask: maskSecret(token) }) : t("assistant.keyHelp") },
+              { name: "templateName", label: t("settings.templateName"), dir: "ltr", help: t("settings.templateHelp") },
+              { name: "languageAr", label: t("settings.templateLangAr"), dir: "ltr" },
+              { name: "languageEn", label: t("settings.templateLangEn"), dir: "ltr" },
+            ]}
+          />
+        </Section>
+        <Section title={t("assistant.connection")}>
+          <p className="mb-3 text-sm">{wa.enabled && token && wa.phoneNumberId && wa.templateName ? t("settings.whatsappReady") : t("settings.whatsappNotReady")}</p>
+          {canEdit && token && (
+            <ActionButton variant="outline" action={testWhatsApp}>
+              {t("settings.whatsappTest")}
+            </ActionButton>
+          )}
+          <p className="mt-4 text-xs text-muted-foreground">{t("settings.emailNote")}</p>
         </Section>
       </div>
     );

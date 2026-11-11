@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import { ActionButton } from "./action-button";
 import { DateText } from "./format";
 import { Card } from "./ui/card";
+import { Badge } from "./ui/badge";
+
+const TONE: Record<string, "success" | "danger" | "neutral"> = { SENT: "success", FAILED: "danger", SKIPPED: "neutral", OFF: "neutral" };
 import { markNotificationsRead } from "@/server/users/actions";
 
 export async function NotificationsList({ userId }: { userId: string }) {
@@ -25,7 +28,13 @@ export async function NotificationsList({ userId }: { userId: string }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-medium">{n.title}</p>
-                {n.body && <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>}
+                {n.body && <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{n.body}</p>}
+                {(n.emailStatus || n.whatsappStatus) && (
+                  <p className="mt-2 flex flex-wrap gap-1 text-[11px]" title={n.deliveryError ?? undefined}>
+                    {n.emailStatus && <Badge tone={TONE[n.emailStatus] ?? "neutral"}>{t("notifications.email")}: {t(`notifications.status.${n.emailStatus}`)}</Badge>}
+                    {n.whatsappStatus && <Badge tone={TONE[n.whatsappStatus] ?? "neutral"}>WhatsApp: {t(`notifications.status.${n.whatsappStatus}`)}</Badge>}
+                  </p>
+                )}
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">
                 <DateText value={n.createdAt} withTime />

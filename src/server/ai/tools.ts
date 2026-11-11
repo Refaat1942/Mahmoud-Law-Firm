@@ -6,6 +6,9 @@ import { can, matterScope, type CurrentUser } from "@/lib/session";
 import { agendaFor } from "@/lib/ai/agenda";
 import type { ToolSpec } from "@/lib/ai/client";
 import { balanceDue } from "@/lib/billing";
+import { computeDueDate, isoDate } from "@/lib/deadlines";
+import { getDeadlinePresets } from "@/lib/settings";
+import { conflictCheck } from "../clients/queries";
 
 /** What the assistant did that the user should see (links in the chat). */
 export type AssistantAction = { type: "task"; id: string; title: string };
@@ -41,6 +44,23 @@ export function toolsFor(user: CurrentUser): ToolSpec[] {
         ["title", "dueDate"],
       ),
     );
+  if (can(user, "clients"))
+    tools.push(
+      spec(
+        "conflict_check",
+        "Conflict-of-interest check: finds existing clients and adverse parties matching a name or ID number (Arabic letter variants included) and the cases they appear in. Results are leads for a lawyer to verify.",
+        { name: { type: "string" } },
+        ["name"],
+      ),
+    );
+  tools.push(
+    spec(
+      "calculate_deadline",
+      "Adds a number of calendar days to a start date (e.g. service or judgment date) and rolls the result past weekends and the office's holiday calendar. Statutory periods come from the office settings when a preset key is given (APPEAL, CASSATION, OBJECTION, EXECUTION). The result must be verified by a lawyer.",
+      { startDate: { type: "string", description: "YYYY-MM-DD" }, days: { type: "integer", minimum: 1, maximum: 3650 }, preset: { type: "string" } },
+      ["startDate"],
+    ),
+  );
   if (can(user, "billing")) tools.push(spec("get_unpaid_invoices", "Issued invoices with a balance due, oldest first, optionally for one client name.", { client: { type: "string" } }));
   return tools;
 }
@@ -57,6 +77,12 @@ const args = {
     fileNo: z.string().trim().max(40).optional(),
   }),
   get_unpaid_invoices: z.object({ client: z.string().trim().max(100).optional() }),
+  conflict_check: z.object({ name: z.string().trim().min(2).max(100) }),
+  calculate_deadline: z.object({
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    days: z.number().int().min(1).max(3650).optional(),
+    preset: z.string().trim().max(40).optional(),
+  }),
 };
 
 /** Runs one tool call; returns JSON text for the model. Errors are returned to the model, not thrown. */
@@ -172,5 +198,31 @@ const handlers = {
       take: 20,
     });
     return rows.map((i) => ({ number: i.number, client: i.client.nameAr, issueDate: i.issueDate.toISOString().slice(0, 10), dueDate: i.dueDate?.toISOString().slice(0, 10), balance: `${balanceDue(i).toFixed(2)} ${i.currency}` }));
+  },
+
+  conflict_check: async (user: CurrentUser, a: z.infer<typeof args.conflict_check>) => {
+    const { clients, parties } = await conflictCheck(a.name);
+    // Case titles are only shown for cases the user may open; others are reported as existing without details.
+    const visible = new Set(
+      (await prisma.matter.findMany({ where: { AND: [matterScope(user), { OR: [{ clientId: { in: clients.map((c) => c.id) } }, { parties: { some: { partyId: { in: parties.map((p) => p.id) } } } }] }] }, select: { id: true } })).map(
+        (m) => m.id,
+      ),
+    );
+    const caseRef = (m: { id: string; fileNo: string; titleAr: string; status: string }) => (visible.has(m.id) ? { fileNo: m.fileNo, title: m.titleAr, status: m.status } : { fileNo: m.fileNo, restricted: true });
+    return {
+      note: "Name matches are not proof of a conflict; a lawyer must review them.",
+      asClient: clients.map((c) => ({ code: c.code, name: c.nameAr, nameEn: c.nameEn, cases: c.matters.map(caseRef) })),
+      asParty: parties.map((p) => ({ name: p.nameAr, nameEn: p.nameEn, cases: p.matters.map((x) => ({ ...caseRef(x.matter), role: x.role, client: visible.has(x.matter.id) ? x.matter.client.nameAr : undefined })) })),
+    };
+  },
+
+  calculate_deadline: async (_user: CurrentUser, a: z.infer<typeof args.calculate_deadline>) => {
+    const presets = await getDeadlinePresets();
+    const preset = a.preset ? presets.find((p) => p.key.toLowerCase() === a.preset!.toLowerCase()) : undefined;
+    const days = a.days ?? preset?.days;
+    if (!days) return { error: "Give the number of days or one of the preset keys.", presets: presets.map((p) => ({ key: p.key, name: p.nameEn, days: p.days })) };
+    const holidays = new Set((await prisma.holiday.findMany()).map((h) => h.date.toISOString().slice(0, 10)));
+    const due = computeDueDate(new Date(`${a.startDate}T00:00:00`), days, holidays);
+    return { startDate: a.startDate, days, preset: preset?.key, dueDate: isoDate(due), rule: "calendar days, rolled forward past Saturday/Sunday and office holidays", verify: "Check the statutory period and how it is counted for this case before relying on this date." };
   },
 };
