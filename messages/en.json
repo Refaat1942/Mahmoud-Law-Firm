@@ -16,7 +16,10 @@
     "users": "Users & permissions",
     "settings": "Settings",
     "collapse": "Collapse menu",
-    "assistant": "AI assistant"
+    "assistant": "AI assistant",
+    "appointments": "Appointments & meetings",
+    "notices": "Legal notices",
+    "updates": "Daily updates"
   },
   "topbar": { "language": "Language", "theme": "Dark mode", "notifications": "Notifications", "logout": "Sign out" },
   "search": {
@@ -322,7 +325,13 @@
     "Currency": { "AED": "UAE dirham", "USD": "US dollar", "EUR": "Euro", "SAR": "Saudi riyal", "GBP": "Pound sterling" },
     "Emirate": { "ABU_DHABI": "Abu Dhabi", "DUBAI": "Dubai", "SHARJAH": "Sharjah", "AJMAN": "Ajman", "UMM_AL_QUWAIN": "Umm Al Quwain", "RAS_AL_KHAIMAH": "Ras Al Khaimah", "FUJAIRAH": "Fujairah", "FEDERAL": "Federal" },
     "ExpiryState": { "VALID": "Valid", "EXPIRING": "Expiring soon", "EXPIRED": "Expired" },
-    "StatementKind": { "invoice": "Invoice", "payment": "Receipt", "creditNote": "Credit note", "trustApplied": "Applied from trust" }
+    "StatementKind": { "invoice": "Invoice", "payment": "Receipt", "creditNote": "Credit note", "trustApplied": "Applied from trust" },
+    "AppointmentKind": { "CLIENT_MEETING": "Client meeting", "INTERNAL_MEETING": "Internal meeting", "CONSULTATION": "Consultation", "COURT_VISIT": "Court visit", "OTHER": "Other" },
+    "AppointmentStatus": { "SCHEDULED": "Scheduled", "DONE": "Done", "CANCELLED": "Cancelled" },
+    "ContactPreference": { "IN_PERSON": "In person", "PHONE": "Phone", "WHATSAPP": "WhatsApp", "EMAIL": "Email", "VIDEO": "Video call" },
+    "NoticeDirection": { "OUTGOING": "Outgoing notice", "INCOMING": "Incoming notice" },
+    "NoticeMethod": { "NOTARY": "Notary public", "COURT_BAILIFF": "Court bailiff", "COURIER": "Courier", "REGISTERED_MAIL": "Registered mail", "EMAIL": "Email", "WHATSAPP": "WhatsApp", "HAND_DELIVERY": "Hand delivery", "OTHER": "Other" },
+    "NoticeStatus": { "DRAFT": "Draft", "SENT": "Sent", "DELIVERED": "Served", "REFUSED": "Refused", "FAILED": "Service failed" }
   },
   "clients": {
     "title": "Clients",
@@ -349,7 +358,13 @@
     "poaFileHelp": "Saved with the client's documents and shown here and in the Documents tab",
     "noPoaFile": "No file",
     "poaFolder": "Powers of attorney",
-    "poaDocName": "Power of attorney {number}"
+    "poaDocName": "Power of attorney {number}",
+    "poaVerified": "Verified",
+    "poaUnverified": "Not verified",
+    "verify": "Mark verified",
+    "unverify": "Remove verification",
+    "confirmVerify": "Has the PoA been checked against the original and confirmed in force?",
+    "poaLinked": "The PoA is linked to cases; unlink it first"
   },
   "cases": {
     "title": "Cases",
@@ -383,8 +398,21 @@
       "created": "Case opened",
       "status": "Status changed to {status}",
       "level": "Case moved to {level}",
-      "party": "{name} added as {role}"
-    }
+      "party": "{name} added as {role}",
+      "poaLinked": "Power of attorney {number} linked"
+    },
+    "poaLinked": "Powers of attorney on this case",
+    "noValidPoa": "No valid power of attorney is linked to this case",
+    "noValidPoaShort": "No valid PoA",
+    "linkPoa": "Link PoA",
+    "unlinkPoa": "Unlink PoA",
+    "confirmUnlinkPoa": "Unlink this PoA from the case?",
+    "noEligiblePoa": "No verified, unexpired PoA of this client is left to link",
+    "poaBlocked": "{count} unverified or expired PoAs cannot be linked; verify them on the client file.",
+    "openClient": "Open client file",
+    "poaOtherClient": "The PoA belongs to another client",
+    "poaUnverified": "An unverified PoA cannot be linked",
+    "poaExpired": "An expired PoA cannot be linked"
   },
   "hearings": {
     "title": "Hearings",
@@ -418,7 +446,7 @@
     "markDone": "Done / undo",
     "deadlineDone": "A completed deadline cannot be deleted",
     "calendarHelp": "Hearings, legal deadlines and tasks. Click a day to add a hearing",
-    "legend": { "hearing": "Hearing", "deadline": "Legal deadline", "task": "Task" },
+    "legend": { "hearing": "Hearing", "deadline": "Legal deadline", "task": "Task", "appointment": "Appointment" },
     "events": {
       "scheduled": "Hearing on {date}",
       "decision": "Hearing decision {date}: {decision}",
@@ -607,7 +635,18 @@
     "trustInsufficient": "Insufficient trust balance",
     "trustAedOnly": "Paying from trust is available for AED invoices only",
     "quoteLocked": "The quote was already converted to an invoice",
-    "pdf": { "billTo": "Bill to", "draftTitle": "Draft invoice — not valid for tax purposes", "taxInvoice": "Tax Invoice  فاتورة ضريبية", "quote": "Quotation  عرض سعر", "receipt": "Receipt Voucher  سند قبض", "receivedFrom": "Received from", "receivedBy": "Received by", "signature": "Signature" }
+    "pdf": { "billTo": "Bill to", "draftTitle": "Draft invoice — not valid for tax purposes", "taxInvoice": "Tax Invoice  فاتورة ضريبية", "quote": "Quotation  عرض سعر", "receipt": "Receipt Voucher  سند قبض", "receivedFrom": "Received from", "receivedBy": "Received by", "signature": "Signature" },
+    "allocation": "Allocate to invoices",
+    "autoAllocate": "Auto-allocate (oldest first)",
+    "noOpenInvoices": "No open invoices; the amount is recorded on account",
+    "allocate": "Amount allocated",
+    "allocated": "Allocated",
+    "onAccountLeft": "Left on account",
+    "allocateReceipt": "Allocate receipt",
+    "allocationPositive": "Allocated amounts must be above zero",
+    "allocationDuplicate": "The same invoice appears twice",
+    "allocationExceeds": "Allocations exceed the receipt amount",
+    "allocationCurrency": "One receipt cannot settle invoices in different currencies"
   },
   "accounting": {
     "newExpense": "New expense",
@@ -814,7 +853,7 @@
     "sequenceHelp": "The next number cannot go back to a number already used this year, so invoice numbers never repeat.",
     "presetsHelp": "Standard periods offered when adding a legal deadline to a case. Review them against the applicable law.",
     "newPreset": "New period",
-    "emails": { "hearingReminder": "Hearing reminder", "deadlineReminder": "Legal deadline reminder", "taskReminder": "Task reminder", "expiryReminder": "Document or PoA expiry", "invoiceOverdue": "Overdue invoice" },
+    "emails": { "hearingReminder": "Hearing reminder", "deadlineReminder": "Legal deadline reminder", "taskReminder": "Task reminder", "expiryReminder": "Document or PoA expiry", "invoiceOverdue": "Overdue invoice", "appointmentReminder": "Appointment reminder", "noticeDeadline": "Notice deadline" },
     "emailHelp": "Messages go out in each user's language. Keep the placeholders of the original template (such as matter and date in double braces) as they are.",
     "sequenceBackwards": "Numbering cannot go back to a used number"
   },
@@ -901,5 +940,61 @@
     "connected": "Connected",
     "modelMissing": "The selected model is not in this key's model list",
     "availableModels": "{count} models available:"
+  },
+  "updates": {
+    "title": "Daily updates",
+    "subtitle": "Everything that needs action: hearings without an outcome, overdue deadlines and tasks, and idle cases. Items leave the queue when done.",
+    "noOutcome": "Hearings without a recorded outcome",
+    "overdueDeadlines": "Missed legal deadlines",
+    "overdueTasks": "Overdue tasks",
+    "idleCases": "Open cases idle for {days} days",
+    "idleDays": "Idle days",
+    "lastActivity": "Last activity",
+    "clear": "Nothing needs action",
+    "help": "Computed live as of {date} within your access."
+  },
+  "appointments": {
+    "title": "Appointments & meetings",
+    "new": "New appointment",
+    "tabs": { "upcoming": "Upcoming", "mine": "Mine", "past": "Past" },
+    "empty": "No appointments",
+    "start": "Start",
+    "end": "End",
+    "location": "Location",
+    "onlineLink": "Video meeting link",
+    "online": "Online",
+    "language": "Client language",
+    "contactPreference": "Preferred contact",
+    "attendees": "Attendees",
+    "attendeesHelp": "Hold Ctrl (or ⌘) to pick several; every attendee is reminded",
+    "organizer": "Organiser",
+    "outcome": "Meeting outcome",
+    "join": "Join meeting"
+  },
+  "notices": {
+    "title": "Legal notices",
+    "subtitle": "Outgoing and incoming notices, service dates and deadlines",
+    "new": "New notice",
+    "empty": "No notices",
+    "titlePlaceholder": "e.g. Payment demand",
+    "direction": "Type",
+    "delivery": "Service status",
+    "counterparty": "Counterparty",
+    "method": "Service method",
+    "referenceHelp": "Notary or court transaction number",
+    "sentAt": "Sent on",
+    "servedAt": "Served on",
+    "graceDays": "Grace period (days)",
+    "graceHelp": "Counted from the service date; a due date on a holiday moves to the next working day",
+    "acknowledgedAt": "Acknowledged on",
+    "dueDate": "Deadline",
+    "matterHelp": "With a case, the deadline is added to the case's legal deadlines",
+    "awaitingService": "Awaiting service",
+    "running": "Running deadlines",
+    "expired": "Expired deadlines",
+    "verifyHelp": "Check the period required by law or contract before relying on it; the system only counts the days entered.",
+    "deadlineTitle": "Notice deadline: {title}",
+    "statusLabel": { "DRAFT": "Draft", "SENT": "Sent", "DELIVERED": "Served", "REFUSED": "Refused", "FAILED": "Service failed" },
+    "events": { "OUTGOING": "Notice sent to {counterparty}: {title}", "INCOMING": "Notice received from {counterparty}: {title}", "status": "Notice {title}: {status}", "deadline": "Notice deadline {title} until {date}" }
   }
 }

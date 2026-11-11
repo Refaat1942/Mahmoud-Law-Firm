@@ -11,11 +11,11 @@ import { nextNumber } from "@/lib/sequence";
 import { computeLine } from "@/lib/vat";
 import { dec, round2, sum } from "@/lib/money";
 import { ACC, deleteEntriesFor, invoiceLines, postEntry } from "@/lib/journal";
-import { balanceDue, creditNoteTotals, toAed } from "@/lib/billing";
+import { balanceDue, creditNoteTotals, toAed, validateAllocations } from "@/lib/billing";
 import { isoDate } from "@/lib/deadlines";
 import { assertMatterAccess } from "../matters/access";
-import { clientTrustBalance, invoiceScope, quoteScope, recalcInvoice, recalcQuote, unbilledItems } from "./queries";
-import { applyTrustSchema, creditNoteSchema, invoiceSchema, lineSchema, paymentSchema, quoteSchema, trustSchema } from "./schema";
+import { clientTrustBalance, invoiceScope, openInvoices, paymentScope, quoteScope, recalcInvoice, recalcQuote, unallocated, unbilledItems } from "./queries";
+import { allocateSchema, applyTrustSchema, creditNoteSchema, invoiceSchema, lineSchema, paymentSchema, quoteSchema, trustSchema } from "./schema";
 
 const draftNumber = () => `DRAFT-${randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -204,25 +204,37 @@ export const deleteInvoice = defineAction({ module: "billing", perm: "delete", e
 
 // ───────────── Payments ─────────────
 
+/**
+ * Records a receipt. It can settle one invoice (invoiceId), several invoices of the same client and
+ * currency (allocations), or stay fully or partly on account to be allocated later.
+ */
 export const createPayment = defineAction({ module: "billing", perm: "create", entity: "Payment", schema: paymentSchema }, async (input, { user }) => {
   const t = await getTranslations("billing");
+  const { allocations: requested, ...data } = input;
   const payment = await prisma.$transaction(async (tx) => {
-    let rate = dec(1);
-    if (input.invoiceId) {
-      const inv = await findInvoice(user, input.invoiceId, tx);
-      if (inv.clientId !== input.clientId) throw new ActionError("billing.invoiceClient");
-      if (!["ISSUED", "PARTIALLY_PAID"].includes(inv.status)) throw new ActionError("billing.notPayable");
-      if (dec(input.amount).greaterThan(balanceDue(inv))) throw new ActionError("billing.overpayment");
-      rate = inv.exchangeRate;
-    }
-    const bank = await bankAccountFor(input.bankAccountId, tx);
+    const allocations = requested ?? (data.invoiceId ? [{ invoiceId: data.invoiceId, amount: data.amount }] : []);
+    const open = await openInvoices(user, data.clientId, tx);
+    const error = validateAllocations(data.amount, allocations, open.map((o) => ({ id: o.id, due: o.due })));
+    if (error) throw new ActionError(error);
+    const invoices = allocations.map((a) => open.find((o) => o.id === a.invoiceId)!);
+    if (new Set(invoices.map((i) => i.currency)).size > 1) throw new ActionError("billing.allocationCurrency");
+    // Amounts are in the invoices' currency; the ledger is in AED at the (first) invoice's rate.
+    const rate = invoices[0]?.exchangeRate ?? dec(1);
+    const bank = await bankAccountFor(data.bankAccountId, tx);
     const number = await nextNumber("payment", tx);
     const p = await tx.payment.create({
-      data: { ...input, number, chequeStatus: input.method === "CHEQUE" ? "PENDING" : null, chequeNo: input.method === "CHEQUE" ? input.chequeNo : null },
+      data: {
+        ...data,
+        invoiceId: allocations[0]?.invoiceId ?? null,
+        number,
+        chequeStatus: data.method === "CHEQUE" ? "PENDING" : null,
+        chequeNo: data.method === "CHEQUE" ? data.chequeNo : null,
+        allocations: { create: allocations.map((a) => ({ invoiceId: a.invoiceId, amount: round2(a.amount) })) },
+      },
     });
-    const aed = toAed(input.amount, rate);
+    const aed = toAed(data.amount, rate);
     await postEntry(tx, {
-      date: input.date,
+      date: data.date,
       description: t("journal.payment", { number }),
       sourceType: "payment",
       sourceId: p.id,
@@ -232,10 +244,31 @@ export const createPayment = defineAction({ module: "billing", perm: "create", e
         { accountCode: ACC.RECEIVABLE, credit: aed },
       ],
     });
-    if (input.invoiceId) await recalcInvoice(tx, input.invoiceId);
+    for (const a of allocations) await recalcInvoice(tx, a.invoiceId);
     return p;
   });
   return { id: payment.id };
+});
+
+/** Allocates the on-account part of an existing receipt to open invoices (no new ledger entry: the receivable was already credited). */
+export const allocatePayment = defineAction({ module: "billing", perm: "update", entity: "Payment", schema: allocateSchema }, async ({ allocations }, { user }, paymentId: string) => {
+  await prisma.$transaction(async (tx) => {
+    const p = await tx.payment.findFirst({ where: { AND: [paymentScope(user), { id: paymentId }] } });
+    if (!p || p.chequeStatus === "BOUNCED") throw new ActionError("errors.notFound");
+    const open = await openInvoices(user, p.clientId, tx);
+    const error = validateAllocations(await unallocated(paymentId, tx), allocations, open.map((o) => ({ id: o.id, due: o.due })));
+    if (error) throw new ActionError(error);
+    for (const a of allocations) {
+      await tx.paymentAllocation.upsert({
+        where: { paymentId_invoiceId: { paymentId, invoiceId: a.invoiceId } },
+        create: { paymentId, invoiceId: a.invoiceId, amount: round2(a.amount) },
+        update: { amount: { increment: round2(a.amount) } },
+      });
+      await recalcInvoice(tx, a.invoiceId);
+    }
+    if (!p.invoiceId) await tx.payment.update({ where: { id: paymentId }, data: { invoiceId: allocations[0].invoiceId } });
+  });
+  return { id: paymentId };
 });
 
 const chequeSchema = z.object({ status: z.enum(["CLEARED", "BOUNCED"]) });
@@ -247,17 +280,17 @@ export const setChequeStatus = defineAction({ module: "billing", perm: "update",
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({ where: { id }, data: { chequeStatus: status } });
     if (status === "BOUNCED") await deleteEntriesFor(tx, "payment", id);
-    if (p.invoiceId) await recalcInvoice(tx, p.invoiceId);
+    for (const a of await tx.paymentAllocation.findMany({ where: { paymentId: id } })) await recalcInvoice(tx, a.invoiceId);
   });
   return { id, audit: { status } };
 });
 
 export const deletePayment = defineAction({ module: "billing", perm: "delete", entity: "Payment" }, async (_i, _c, id: string) => {
-  const p = await prisma.payment.findUniqueOrThrow({ where: { id } });
+  await prisma.payment.findUniqueOrThrow({ where: { id } });
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({ where: { id }, data: { deletedAt: new Date() } });
     await deleteEntriesFor(tx, "payment", id);
-    if (p.invoiceId) await recalcInvoice(tx, p.invoiceId);
+    for (const a of await tx.paymentAllocation.findMany({ where: { paymentId: id } })) await recalcInvoice(tx, a.invoiceId);
   });
   return { id };
 });

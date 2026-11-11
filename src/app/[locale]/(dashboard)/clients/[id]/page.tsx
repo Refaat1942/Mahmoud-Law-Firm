@@ -14,7 +14,7 @@ import { EntityForm } from "@/components/entity-form";
 import { ActionButton } from "@/components/action-button";
 import { DateText, Money } from "@/components/format";
 import { DetailList, PageHeader, Section, StatCard, Tabs } from "@/components/page";
-import { addContact, addPoa, deleteClient, deleteContact, deletePoa } from "@/server/clients/actions";
+import { addContact, addPoa, deleteClient, deleteContact, deletePoa, setPoaVerified } from "@/server/clients/actions";
 import { clientStatement } from "@/server/clients/queries";
 import { invoiceScope } from "@/server/billing/queries";
 import { documentScope } from "@/server/documents/queries";
@@ -229,7 +229,15 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
                     const left = p.expiresAt ? daysUntil(p.expiresAt) : null;
                     return (
                       <tr key={p.id}>
-                        <Td>{p.number}</Td>
+                        <Td>
+                          {p.number}{" "}
+                          {p.verified ? <Badge tone="success">{t("clients.poaVerified")}</Badge> : <Badge tone="neutral">{t("clients.poaUnverified")}</Badge>}
+                          {canEdit && (
+                            <ActionButton variant="link" size="sm" className="h-auto px-1" action={setPoaVerified.bind(null, p.id)} payload={{ verified: !p.verified }} confirm={p.verified ? undefined : t("clients.confirmVerify")}>
+                              {p.verified ? t("clients.unverify") : t("clients.verify")}
+                            </ActionButton>
+                          )}
+                        </Td>
                         <Td>
                           <DateText value={p.issuedAt} />
                         </Td>

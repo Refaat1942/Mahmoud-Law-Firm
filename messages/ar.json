@@ -16,7 +16,10 @@
     "users": "المستخدمون والصلاحيات",
     "settings": "الإعدادات",
     "collapse": "طي القائمة",
-    "assistant": "المساعد الذكي"
+    "assistant": "المساعد الذكي",
+    "appointments": "المواعيد والاجتماعات",
+    "notices": "الإنذارات القانونية",
+    "updates": "التحديثات اليومية"
   },
   "topbar": { "language": "اللغة", "theme": "الوضع الليلي", "notifications": "التنبيهات", "logout": "تسجيل الخروج" },
   "search": {
@@ -322,7 +325,13 @@
     "Currency": { "AED": "درهم إماراتي", "USD": "دولار أمريكي", "EUR": "يورو", "SAR": "ريال سعودي", "GBP": "جنيه إسترليني" },
     "Emirate": { "ABU_DHABI": "أبوظبي", "DUBAI": "دبي", "SHARJAH": "الشارقة", "AJMAN": "عجمان", "UMM_AL_QUWAIN": "أم القيوين", "RAS_AL_KHAIMAH": "رأس الخيمة", "FUJAIRAH": "الفجيرة", "FEDERAL": "اتحادي" },
     "ExpiryState": { "VALID": "سارية", "EXPIRING": "قاربت على الانتهاء", "EXPIRED": "منتهية" },
-    "StatementKind": { "invoice": "فاتورة", "payment": "سند قبض", "creditNote": "إشعار دائن", "trustApplied": "خصم من الأمانات" }
+    "StatementKind": { "invoice": "فاتورة", "payment": "سند قبض", "creditNote": "إشعار دائن", "trustApplied": "خصم من الأمانات" },
+    "AppointmentKind": { "CLIENT_MEETING": "اجتماع مع موكل", "INTERNAL_MEETING": "اجتماع داخلي", "CONSULTATION": "استشارة", "COURT_VISIT": "مراجعة محكمة", "OTHER": "أخرى" },
+    "AppointmentStatus": { "SCHEDULED": "مجدول", "DONE": "تم", "CANCELLED": "ملغى" },
+    "ContactPreference": { "IN_PERSON": "حضوري", "PHONE": "هاتف", "WHATSAPP": "واتساب", "EMAIL": "بريد إلكتروني", "VIDEO": "اجتماع مرئي" },
+    "NoticeDirection": { "OUTGOING": "إنذار صادر", "INCOMING": "إنذار وارد" },
+    "NoticeMethod": { "NOTARY": "كاتب العدل", "COURT_BAILIFF": "مندوب المحكمة", "COURIER": "شركة شحن", "REGISTERED_MAIL": "بريد مسجل", "EMAIL": "بريد إلكتروني", "WHATSAPP": "واتساب", "HAND_DELIVERY": "تسليم باليد", "OTHER": "أخرى" },
+    "NoticeStatus": { "DRAFT": "مسودة", "SENT": "أُرسل", "DELIVERED": "تم الإعلان", "REFUSED": "رُفض الاستلام", "FAILED": "تعذّر الإعلان" }
   },
   "clients": {
     "title": "العملاء",
@@ -349,7 +358,13 @@
     "poaFileHelp": "يُحفظ ضمن مستندات العميل ويظهر هنا وفي تبويب المستندات",
     "noPoaFile": "بدون ملف",
     "poaFolder": "الوكالات",
-    "poaDocName": "وكالة رقم {number}"
+    "poaDocName": "وكالة رقم {number}",
+    "poaVerified": "موثّقة",
+    "poaUnverified": "غير مدققة",
+    "verify": "تأكيد التدقيق",
+    "unverify": "إلغاء التدقيق",
+    "confirmVerify": "هل تمت مطابقة الوكالة مع الأصل والتأكد من سريانها؟",
+    "poaLinked": "الوكالة مرتبطة بقضايا؛ افصلها أولًا"
   },
   "cases": {
     "title": "القضايا",
@@ -383,8 +398,21 @@
       "created": "تم فتح القضية",
       "status": "تغيرت الحالة إلى {status}",
       "level": "انتقلت القضية إلى درجة {level}",
-      "party": "أضيف {name} بصفة {role}"
-    }
+      "party": "أضيف {name} بصفة {role}",
+      "poaLinked": "ربط الوكالة رقم {number}"
+    },
+    "poaLinked": "الوكالات المرتبطة بالقضية",
+    "noValidPoa": "لا توجد وكالة سارية مرتبطة بهذه القضية",
+    "noValidPoaShort": "بدون وكالة سارية",
+    "linkPoa": "ربط وكالة",
+    "unlinkPoa": "فصل الوكالة",
+    "confirmUnlinkPoa": "فصل الوكالة عن هذه القضية؟",
+    "noEligiblePoa": "لا توجد وكالة مدققة وسارية لهذا العميل غير مرتبطة",
+    "poaBlocked": "{count} وكالة غير مدققة أو منتهية لا يمكن ربطها؛ دقّقها من ملف العميل.",
+    "openClient": "فتح ملف العميل",
+    "poaOtherClient": "الوكالة لا تخص عميل هذه القضية",
+    "poaUnverified": "لا يمكن ربط وكالة غير مدققة",
+    "poaExpired": "لا يمكن ربط وكالة منتهية"
   },
   "hearings": {
     "title": "الجلسات",
@@ -418,7 +446,7 @@
     "markDone": "تم / إلغاء",
     "deadlineDone": "لا يمكن حذف موعد منجز",
     "calendarHelp": "الجلسات والمواعيد القانونية والمهام. اضغط على يوم لإضافة جلسة",
-    "legend": { "hearing": "جلسة", "deadline": "موعد قانوني", "task": "مهمة" },
+    "legend": { "hearing": "جلسة", "deadline": "موعد قانوني", "task": "مهمة", "appointment": "موعد" },
     "events": {
       "scheduled": "جلسة بتاريخ {date}",
       "decision": "قرار جلسة {date}: {decision}",
@@ -607,7 +635,18 @@
     "trustInsufficient": "رصيد الأمانات غير كافٍ",
     "trustAedOnly": "السداد من الأمانات متاح للفواتير بالدرهم فقط",
     "quoteLocked": "تم تحويل عرض السعر إلى فاتورة",
-    "pdf": { "billTo": "فاتورة إلى", "draftTitle": "مسودة فاتورة — غير صالحة للأغراض الضريبية", "taxInvoice": "فاتورة ضريبية  Tax Invoice", "quote": "عرض سعر  Quotation", "receipt": "سند قبض  Receipt Voucher", "receivedFrom": "استلمنا من", "receivedBy": "المستلم", "signature": "التوقيع" }
+    "pdf": { "billTo": "فاتورة إلى", "draftTitle": "مسودة فاتورة — غير صالحة للأغراض الضريبية", "taxInvoice": "فاتورة ضريبية  Tax Invoice", "quote": "عرض سعر  Quotation", "receipt": "سند قبض  Receipt Voucher", "receivedFrom": "استلمنا من", "receivedBy": "المستلم", "signature": "التوقيع" },
+    "allocation": "توزيع المبلغ على الفواتير",
+    "autoAllocate": "توزيع تلقائي (الأقدم أولًا)",
+    "noOpenInvoices": "لا توجد فواتير مفتوحة؛ سيُسجل المبلغ دفعة تحت الحساب",
+    "allocate": "المبلغ المخصص",
+    "allocated": "الموزّع",
+    "onAccountLeft": "المتبقي تحت الحساب",
+    "allocateReceipt": "توزيع سند القبض",
+    "allocationPositive": "يجب أن يكون المبلغ المخصص أكبر من صفر",
+    "allocationDuplicate": "الفاتورة مكررة في التوزيع",
+    "allocationExceeds": "مجموع المبالغ الموزعة أكبر من مبلغ السند",
+    "allocationCurrency": "لا يمكن توزيع سند واحد على فواتير بعملات مختلفة"
   },
   "accounting": {
     "newExpense": "مصروف جديد",
@@ -814,7 +853,7 @@
     "sequenceHelp": "لا يمكن إرجاع الرقم التالي لرقم استُخدم في السنة الحالية حتى لا تتكرر أرقام الفواتير.",
     "presetsHelp": "المهل المعتادة التي تظهر عند إضافة موعد قانوني للقضية. راجعها وفق القانون المعمول به.",
     "newPreset": "مهلة جديدة",
-    "emails": { "hearingReminder": "تذكير بجلسة", "deadlineReminder": "تذكير بموعد قانوني", "taskReminder": "تذكير بمهمة", "expiryReminder": "تنبيه انتهاء وثيقة أو وكالة", "invoiceOverdue": "فاتورة متأخرة" },
+    "emails": { "hearingReminder": "تذكير بجلسة", "deadlineReminder": "تذكير بموعد قانوني", "taskReminder": "تذكير بمهمة", "expiryReminder": "تنبيه انتهاء وثيقة أو وكالة", "invoiceOverdue": "فاتورة متأخرة", "appointmentReminder": "تذكير بموعد", "noticeDeadline": "انتهاء مهلة إنذار" },
     "emailHelp": "تُرسل الرسائل بلغة المستخدم. أبقِ المتغيرات الموجودة في القالب الأصلي (مثل matter و date بين أقواس مزدوجة) كما هي.",
     "sequenceBackwards": "لا يمكن إرجاع الترقيم لرقم مستخدم"
   },
@@ -901,5 +940,61 @@
     "connected": "تم الاتصال بنجاح",
     "modelMissing": "النموذج المحدد غير موجود في قائمة نماذج هذا المفتاح",
     "availableModels": "{count} نموذج متاح:"
+  },
+  "updates": {
+    "title": "التحديثات اليومية",
+    "subtitle": "كل ما يحتاج إجراءً: جلسات بلا قرار، مواعيد ومهام متأخرة، وقضايا بلا حركة. يختفي البند تلقائيًا عند إنجازه.",
+    "noOutcome": "جلسات بلا قرار مسجّل",
+    "overdueDeadlines": "مواعيد قانونية فائتة",
+    "overdueTasks": "مهام متأخرة",
+    "idleCases": "قضايا مفتوحة بلا حركة منذ {days} يومًا",
+    "idleDays": "أيام عدم الحركة",
+    "lastActivity": "آخر حركة",
+    "clear": "لا يوجد ما يحتاج إجراءً",
+    "help": "محسوب لحظيًا حتى تاريخ {date} وفق صلاحياتك."
+  },
+  "appointments": {
+    "title": "المواعيد والاجتماعات",
+    "new": "موعد جديد",
+    "tabs": { "upcoming": "القادمة", "mine": "مواعيدي", "past": "السابقة" },
+    "empty": "لا توجد مواعيد",
+    "start": "البداية",
+    "end": "النهاية",
+    "location": "المكان",
+    "onlineLink": "رابط الاجتماع المرئي",
+    "online": "عن بُعد",
+    "language": "لغة الموكل",
+    "contactPreference": "وسيلة التواصل المفضلة",
+    "attendees": "الحضور",
+    "attendeesHelp": "اضغط Ctrl (أو ⌘) لاختيار أكثر من شخص؛ يصل التذكير لكل الحضور",
+    "organizer": "المنظم",
+    "outcome": "نتيجة الاجتماع",
+    "join": "دخول الاجتماع"
+  },
+  "notices": {
+    "title": "الإنذارات القانونية",
+    "subtitle": "الإنذارات الصادرة والواردة وتواريخ الإعلان والمهل",
+    "new": "إنذار جديد",
+    "empty": "لا توجد إنذارات",
+    "titlePlaceholder": "مثال: إنذار بالسداد",
+    "direction": "النوع",
+    "delivery": "حالة الإعلان",
+    "counterparty": "الطرف المُنذَر / المُنذِر",
+    "method": "طريقة الإعلان",
+    "referenceHelp": "رقم المعاملة لدى كاتب العدل أو المحكمة",
+    "sentAt": "تاريخ الإرسال",
+    "servedAt": "تاريخ الإعلان",
+    "graceDays": "المهلة (أيام)",
+    "graceHelp": "تبدأ من تاريخ الإعلان، ويُرحَّل آخر يوم إذا وقع في عطلة",
+    "acknowledgedAt": "تاريخ الإقرار بالاستلام",
+    "dueDate": "نهاية المهلة",
+    "matterHelp": "عند اختيار قضية تُضاف نهاية المهلة لمواعيدها القانونية",
+    "awaitingService": "بانتظار الإعلان",
+    "running": "مهل سارية",
+    "expired": "مهل منتهية",
+    "verifyHelp": "تحقق من المهلة المنصوص عليها في القانون أو العقد قبل الاعتماد عليها؛ النظام يحسبها من الأيام المدخلة فقط.",
+    "deadlineTitle": "مهلة الإنذار: {title}",
+    "statusLabel": { "DRAFT": "مسودة", "SENT": "أُرسل", "DELIVERED": "تم الإعلان", "REFUSED": "رُفض الاستلام", "FAILED": "تعذّر الإعلان" },
+    "events": { "OUTGOING": "إنذار صادر إلى {counterparty}: {title}", "INCOMING": "إنذار وارد من {counterparty}: {title}", "status": "الإنذار {title}: {status}", "deadline": "مهلة الإنذار {title} حتى {date}" }
   }
 }

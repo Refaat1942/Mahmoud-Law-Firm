@@ -1,16 +1,15 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { balanceDue } from "@/lib/billing";
 import { isoDate } from "@/lib/deadlines";
 import { localized } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
-import { EntityForm } from "@/components/entity-form";
+import { PaymentForm } from "@/components/payment-form";
 import { PageHeader, Section } from "@/components/page";
 import { bankOptions, clientOptions, enumOptions } from "@/server/options";
 import { createPayment } from "@/server/billing/actions";
-import { invoiceScope } from "@/server/billing/queries";
+import { openInvoices } from "@/server/billing/queries";
 
 export default async function NewPaymentPage({ searchParams }: { searchParams: Promise<{ clientId?: string; invoiceId?: string }> }) {
   const user = await requirePermission("billing", "create");
@@ -44,11 +43,7 @@ export default async function NewPaymentPage({ searchParams }: { searchParams: P
   }
 
   const client = await prisma.client.findFirstOrThrow({ where: { id: sp.clientId, deletedAt: null } });
-  const open = await prisma.invoice.findMany({
-    where: { AND: [invoiceScope(user), { clientId: client.id, status: { in: ["ISSUED", "PARTIALLY_PAID"] } }] },
-    orderBy: { issueDate: "asc" },
-  });
-  const invoiceOpts = open.map((i) => ({ value: i.id, label: `${i.number} — ${t("billing.balance")}: ${balanceDue(i).toFixed(2)} ${i.currency}` }));
+  const open = await openInvoices(user, client.id);
   const selected = open.find((i) => i.id === sp.invoiceId);
   const banks = await bankOptions();
 
@@ -56,30 +51,15 @@ export default async function NewPaymentPage({ searchParams }: { searchParams: P
     <>
       <PageHeader title={t("billing.recordPayment")} subtitle={localized(client, locale)} />
       <Section>
-        <EntityForm
-          schema="payment"
+        <PaymentForm
+          mode="create"
           action={createPayment}
+          clientId={client.id}
+          invoices={open.map((i) => ({ id: i.id, number: i.number, due: i.due.toFixed(2), currency: i.currency, issueDate: i.issueDate.toISOString() }))}
+          banks={banks}
+          methods={await enumOptions("PaymentMethod")}
+          defaults={{ date: isoDate(new Date()), amount: selected?.due.toFixed(2), invoiceId: selected?.id, bankAccountId: banks[0]?.value }}
           redirectTo={selected ? `/billing/invoices/${selected.id}` : "/billing/payments"}
-          defaultValues={{
-            clientId: client.id,
-            invoiceId: selected?.id,
-            amount: selected ? balanceDue(selected).toFixed(2) : undefined,
-            date: isoDate(new Date()),
-            method: "TRANSFER",
-            bankAccountId: banks[0]?.value,
-          }}
-          fields={[
-            { name: "clientId", label: t("f.client"), type: "select", options: clients, required: true },
-            { name: "invoiceId", label: t("f.invoice"), type: "select", options: invoiceOpts, placeholder: t("billing.onAccount") },
-            { name: "date", label: t("f.date"), type: "date", required: true },
-            { name: "amount", label: t("f.amount"), type: "money", required: true },
-            { name: "method", label: t("f.method"), type: "select", options: await enumOptions("PaymentMethod"), required: true },
-            { name: "bankAccountId", label: t("f.bankAccount"), type: "select", options: banks, required: true },
-            { name: "chequeNo", label: t("f.chequeNo"), required: true, showIf: { field: "method", values: ["CHEQUE"] }, dir: "ltr" },
-            { name: "chequeDueDate", label: t("f.chequeDate"), type: "date", showIf: { field: "method", values: ["CHEQUE"] } },
-            { name: "reference", label: t("f.reference"), dir: "ltr" },
-            { name: "notes", label: t("f.notes"), type: "textarea" },
-          ]}
         />
       </Section>
     </>

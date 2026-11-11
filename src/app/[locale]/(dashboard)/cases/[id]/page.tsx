@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { GitBranchPlus, Pencil, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, matterScope, requirePermission } from "@/lib/session";
-import { localized, localizedTitle } from "@/lib/utils";
+import { localized, localizedTitle, startOfDay } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { Badge, STATUS_TONES } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { PageHeader, Tabs } from "@/components/page";
 import { deleteMatter } from "@/server/matters/actions";
 import { OverviewTab } from "./tabs/overview";
 import { PartiesTab } from "./tabs/parties";
+import { PoaTab } from "./tabs/poa";
 import { TeamTab } from "./tabs/team";
 import { HearingsTab } from "./tabs/hearings";
 import { DeadlinesTab } from "./tabs/deadlines";
@@ -33,10 +34,16 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   });
   if (!matter) notFound();
   const canEdit = can(user, "matters", "update");
+  // Open litigation without a linked, verified and unexpired PoA is flagged in the header.
+  const needsPoa = matter.status === "OPEN" && matter.level !== "CONSULTATION";
+  const validPoa = needsPoa
+    ? await prisma.matterPoa.count({ where: { matterId: id, poa: { deletedAt: null, verified: true, OR: [{ expiresAt: null }, { expiresAt: { gte: startOfDay() } }] } } })
+    : 1;
 
   const tabs = [
     { key: "overview", label: t("common.overview") },
     { key: "parties", label: t("cases.parties") },
+    { key: "poa", label: t("clients.powers") },
     { key: "team", label: t("cases.team") },
     ...(can(user, "hearings") ? [{ key: "hearings", label: t("nav.hearings") }, { key: "deadlines", label: t("cases.deadlines") }] : []),
     ...(can(user, "tasks") ? [{ key: "tasks", label: t("nav.tasks") }] : []),
@@ -50,6 +57,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   const content =
     {
       parties: <PartiesTab {...props} />,
+      poa: <PoaTab {...props} />,
       team: <TeamTab {...props} />,
       hearings: <HearingsTab {...props} />,
       deadlines: <DeadlinesTab {...props} />,
@@ -75,6 +83,11 @@ export default async function CasePage({ params, searchParams }: { params: Promi
             <Badge tone={STATUS_TONES[matter.status]}>{t(`enum.MatterStatus.${matter.status}`)}</Badge>
             <Badge tone="accent">{t(`enum.MatterLevel.${matter.level}`)}</Badge>
             {matter.outcome && <Badge tone={STATUS_TONES[matter.outcome]}>{t(`enum.MatterOutcome.${matter.outcome}`)}</Badge>}
+            {validPoa === 0 && (
+              <Link href={`/cases/${id}?tab=poa`}>
+                <Badge tone="warning">{t("cases.noValidPoaShort")}</Badge>
+              </Link>
+            )}
           </span>
         }
         actions={

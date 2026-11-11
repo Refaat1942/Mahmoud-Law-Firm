@@ -42,7 +42,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       client: true,
       matter: true,
       lines: { orderBy: { id: "asc" } },
-      payments: { where: { deletedAt: null }, include: { bankAccount: true }, orderBy: { date: "asc" } },
+      // Receipts reach an invoice through allocations (one receipt can settle several invoices).
+      allocations: { where: { payment: { deletedAt: null } }, include: { payment: true }, orderBy: { payment: { date: "asc" } } },
       creditNotes: { orderBy: { date: "asc" } },
       trust: { where: { type: "APPLIED" }, orderBy: { date: "asc" } },
       quote: true,
@@ -270,9 +271,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                   </dd>
                 </div>
               </dl>
-              {(inv.payments.length > 0 || inv.trust.length > 0 || inv.creditNotes.length > 0) && (
+              {(inv.allocations.length > 0 || inv.trust.length > 0 || inv.creditNotes.length > 0) && (
                 <ul className="mt-4 divide-y border-t text-sm">
-                  {inv.payments.map((p) => (
+                  {inv.allocations.map(({ payment: p, amount }) => (
                     <li key={p.id} className="flex items-center justify-between gap-2 py-2">
                       <span>
                         <span className="font-medium">{p.number}</span>{" "}
@@ -284,7 +285,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                         )}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Money value={p.amount.toString()} currency={cur} />
+                        <Money value={amount.toString()} currency={cur} />
+                        {!amount.equals(p.amount) && (
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            / <Money value={p.amount.toString()} currency={cur} />
+                          </span>
+                        )}
                         {p.chequeStatus !== "BOUNCED" && (
                         <a
                           href={`/api/pdf/receipt/${p.id}?locale=${locale}`}

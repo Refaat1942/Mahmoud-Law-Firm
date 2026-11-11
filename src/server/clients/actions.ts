@@ -81,3 +81,12 @@ export const deleteParty = defineAction({ module: "clients", perm: "delete", ent
   await prisma.party.update({ where: { id }, data: { deletedAt: new Date() } });
   return { id };
 });
+
+/** Marks a PoA as checked against the original (or clears the mark); only verified PoAs can be linked to cases. */
+export const setPoaVerified = defineAction({ module: "clients", perm: "update", entity: "PowerOfAttorney" }, async (input, { user }, id: string) => {
+  const verified = (input as { verified?: boolean })?.verified === true;
+  const p = await prisma.powerOfAttorney.findFirstOrThrow({ where: { id, deletedAt: null } });
+  if (!verified && (await prisma.matterPoa.count({ where: { poaId: id } }))) throw new ActionError("clients.poaLinked");
+  await prisma.powerOfAttorney.update({ where: { id }, data: { verified, verifiedAt: verified ? new Date() : null, verifiedById: verified ? user.id : null } });
+  return { id, audit: { number: p.number, verified } };
+});

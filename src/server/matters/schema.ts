@@ -42,3 +42,5 @@ export const feeAgreementSchema = z.object({
 });
 
 export const installmentSchema = z.object({ dueDate: zDate(), amount: zMoney(), description: zOptText(300) });
+
+export const poaLinkSchema = z.object({ poaId: zId() });

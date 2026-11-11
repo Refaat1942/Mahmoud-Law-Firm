@@ -43,3 +43,27 @@ describe("toAed / creditNoteTotals", () => {
     expect([c.subtotal, c.vatAmount, c.total].map((v) => v.toFixed(2))).toEqual(["200.00", "10.00", "210.00"]);
   });
 });
+
+import { autoAllocate, validateAllocations } from "../../src/lib/billing";
+
+describe("receipt allocation", () => {
+  const open = [
+    { id: "a", due: "1000.00" },
+    { id: "b", due: "500.00" },
+  ];
+  it("accepts a split within each balance and the receipt", () => {
+    expect(validateAllocations(1200, [{ invoiceId: "a", amount: 1000 }, { invoiceId: "b", amount: 200 }], open)).toBeNull();
+    expect(validateAllocations(2000, [{ invoiceId: "a", amount: 1000 }], open)).toBeNull();
+  });
+  it("rejects over-allocation, duplicates, unknown invoices and non-positive amounts", () => {
+    expect(validateAllocations(1000, [{ invoiceId: "a", amount: 800 }, { invoiceId: "b", amount: 300 }], open)).toBe("billing.allocationExceeds");
+    expect(validateAllocations(2000, [{ invoiceId: "b", amount: 600 }], open)).toBe("billing.overpayment");
+    expect(validateAllocations(2000, [{ invoiceId: "a", amount: 1 }, { invoiceId: "a", amount: 1 }], open)).toBe("billing.allocationDuplicate");
+    expect(validateAllocations(2000, [{ invoiceId: "z", amount: 1 }], open)).toBe("billing.notPayable");
+    expect(validateAllocations(2000, [{ invoiceId: "a", amount: 0 }], open)).toBe("billing.allocationPositive");
+  });
+  it("auto-allocates oldest first and leaves the rest on account", () => {
+    expect(autoAllocate(1200, open).map((x) => [x.invoiceId, String(x.amount)])).toEqual([["a", "1000"], ["b", "200"]]);
+    expect(autoAllocate(2000, open).map((x) => String(x.amount))).toEqual(["1000", "500"]);
+  });
+});

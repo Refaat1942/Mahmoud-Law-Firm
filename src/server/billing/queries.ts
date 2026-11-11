@@ -2,7 +2,7 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { prisma, type Tx } from "@/lib/prisma";
 import { matterScope, type CurrentUser } from "@/lib/session";
-import { settledStatus, trustBalance } from "@/lib/billing";
+import { balanceDue, settledStatus, trustBalance } from "@/lib/billing";
 import { computeTotals } from "@/lib/vat";
 import { dec, sum } from "@/lib/money";
 
@@ -19,11 +19,11 @@ export function quoteScope(user: CurrentUser): Prisma.QuoteWhereInput {
 
 /**
  * Payments a user may see: everything for roles that see every matter; otherwise only payments
- * allocated to invoices inside their invoice scope (unallocated "on account" payments stay hidden).
+ * allocated to at least one invoice inside their invoice scope (unallocated "on account" payments stay hidden).
  */
 export function paymentScope(user: CurrentUser): Prisma.PaymentWhereInput {
   if (user.scopeAll) return { deletedAt: null };
-  return { deletedAt: null, invoice: { is: invoiceScope(user) } };
+  return { deletedAt: null, allocations: { some: { invoice: invoiceScope(user) } } };
 }
 
 /** Trust movements a user may see: all for scope-all roles, otherwise those on their matters. */
@@ -47,7 +47,7 @@ export async function recalcInvoice(tx: Tx, id: string) {
     totals = { subtotal: t.subtotal, vatAmount: t.vatAmount, total: t.total };
   }
   const [payments, applied, credits] = await Promise.all([
-    tx.payment.findMany({ where: { ...COUNTED_PAYMENT, invoiceId: id }, select: { amount: true } }),
+    tx.paymentAllocation.findMany({ where: { invoiceId: id, payment: COUNTED_PAYMENT }, select: { amount: true } }),
     tx.trustTransaction.findMany({ where: { invoiceId: id, type: "APPLIED" }, select: { amount: true } }),
     tx.creditNote.findMany({ where: { invoiceId: id }, select: { total: true } }),
   ]);
@@ -92,3 +92,18 @@ export async function unbilledItems(clientId: string, matterId: string | null) {
 }
 
 export const hasValue = (v: Prisma.Decimal) => dec(v).greaterThan(0);
+
+/** Part of a receipt not yet allocated to invoices (held on the client's account). */
+export async function unallocated(paymentId: string, tx: Tx = prisma) {
+  const p = await tx.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { allocations: true } });
+  return dec(p.amount).minus(sum(p.allocations.map((a) => a.amount)));
+}
+
+/** Issued invoices of a client still open, oldest first, with their balance (within the user's scope). */
+export async function openInvoices(user: CurrentUser, clientId: string, tx: Tx = prisma) {
+  const rows = await tx.invoice.findMany({
+    where: { AND: [invoiceScope(user), { clientId, status: { in: ["ISSUED", "PARTIALLY_PAID"] } }] },
+    orderBy: [{ issueDate: "asc" }, { number: "asc" }],
+  });
+  return rows.map((i) => ({ ...i, due: balanceDue(i) }));
+}
