@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { AlarmClock, Briefcase, CalendarClock, ListChecks, Plus, Sparkles } from "lucide-react";
+import { AlarmClock, Briefcase, CalendarClock, FileWarning, Gavel, ListChecks, Plus, Sparkles, Wallet } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, matterScope, requirePermission } from "@/lib/session";
 import { addDays, localized, localizedTitle, startOfDay } from "@/lib/utils";
@@ -11,6 +11,13 @@ import { DateText } from "@/components/format";
 import { PageHeader, Section, StatCard } from "@/components/page";
 import { taskScope } from "@/server/tasks/queries";
 import { documentScope } from "@/server/documents/queries";
+import { openInvoiceWhere } from "@/server/collections/queries";
+import { courtUpdateScope } from "@/server/courts/queries";
+import { Money } from "@/components/format";
+import { dec } from "@/lib/money";
+
+/** Open cases with no timeline activity for this many days are flagged as needing attention. */
+const INACTIVE_DAYS = 60;
 
 const LIST_SIZE = 8;
 
@@ -73,6 +80,26 @@ export default async function DashboardPage() {
       : none,
   ]);
 
+  const inactiveCutoff = addDays(today, -INACTIVE_DAYS);
+  const [receivables, pendingUpdates, expiringPoas, inactive] = await Promise.all([
+    can(user, "billing") ? prisma.invoice.aggregate({ where: openInvoiceWhere(user), _sum: { total: true, paidAmount: true, creditAmount: true } }) : none,
+    show.matters ? prisma.courtUpdate.count({ where: { AND: [courtUpdateScope(user), { status: "PENDING" }] } }) : none,
+    can(user, "clients")
+      ? prisma.powerOfAttorney.count({ where: { deletedAt: null, expiresAt: { gte: today, lt: addDays(today, 30) }, client: { deletedAt: null } } })
+      : none,
+    show.matters
+      ? prisma.matter.findMany({
+          where: { AND: [scope, { status: "OPEN", openedAt: { lt: inactiveCutoff }, events: { none: { createdAt: { gte: inactiveCutoff } } }, hearings: { none: { deletedAt: null, date: { gte: today } } } }] },
+          include: { client: true, events: { orderBy: { createdAt: "desc" }, take: 1 } },
+          orderBy: { openedAt: "asc" },
+          take: LIST_SIZE,
+        })
+      : none,
+  ]);
+  const outstanding = receivables
+    ? dec(receivables._sum.total ?? 0).minus(receivables._sum.paidAmount ?? 0).minus(receivables._sum.creditAmount ?? 0)
+    : null;
+
   const dueTone = (d: Date | null) => (!d ? "neutral" : d < today ? "danger" : d < addDays(today, 2) ? "warning" : "neutral");
   const matterLabel = (m: { fileNo: string; titleAr: string; titleEn: string | null } | null) => (m ? `${m.fileNo} — ${localizedTitle(m, locale)}` : "");
   const name = locale === "en" ? user.nameEn || user.nameAr : user.nameAr;
@@ -123,7 +150,35 @@ export default async function DashboardPage() {
         {deadlineCount !== null && <StatCard label={t("dashboard.deadlinesWeek")} value={deadlineCount} icon={<AlarmClock className="size-5" />} />}
       </div>
 
+      {(outstanding !== null || pendingUpdates !== null || expiringPoas !== null) && (
+        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {outstanding !== null && (
+            <StatCard label={t("dashboard.receivables")} value={<Money value={outstanding.toFixed(2)} />} icon={<Wallet className="size-5" />} href="/billing/collections" />
+          )}
+          {pendingUpdates !== null && (
+            <StatCard label={t("dashboard.pendingCourtUpdates")} value={pendingUpdates} icon={<Gavel className="size-5" />} href="/court-updates" />
+          )}
+          {expiringPoas !== null && <StatCard label={t("dashboard.expiringPoas")} value={expiringPoas} icon={<FileWarning className="size-5" />} />}
+          {inactive !== null && <StatCard label={t("dashboard.inactiveCases")} value={inactive.length < LIST_SIZE ? inactive.length : `${LIST_SIZE}+`} icon={<Briefcase className="size-5" />} />}
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-2">
+        {inactive && inactive.length > 0 && (
+          <Section title={t("dashboard.needsAttention", { days: INACTIVE_DAYS })} className="lg:col-span-2">
+            <List empty="">
+              {inactive.map((m) => (
+                <Row
+                  key={m.id}
+                  href={`/cases/${m.id}`}
+                  title={matterLabel(m)}
+                  meta={localized(m.client, locale)}
+                  side={m.events[0] ? <DateText value={m.events[0].createdAt} /> : t("dashboard.noActivity")}
+                />
+              ))}
+            </List>
+          </Section>
+        )}
         {hearings && (
           <Section
             title={t("dashboard.upcomingHearings")}

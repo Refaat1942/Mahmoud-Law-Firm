@@ -42,6 +42,7 @@ export const STATUS_TONES: Record<string, Tone> = {
   SUBMITTED: "info",
   APPROVED: "success",
   REJECTED: "danger",
+  DECLINED: "danger",
   BILLED: "accent",
   ISSUED: "info",
   PARTIALLY_PAID: "warning",

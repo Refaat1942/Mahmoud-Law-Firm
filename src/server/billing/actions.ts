@@ -211,6 +211,11 @@ export const deleteInvoice = defineAction({ module: "billing", perm: "delete", e
 export const createPayment = defineAction({ module: "billing", perm: "create", entity: "Payment", schema: paymentSchema }, async (input, { user }) => {
   const t = await getTranslations("billing");
   const { allocations: requested, ...data } = input;
+  // The same cheque cannot be recorded twice for a client (a bounced cheque may be re-presented).
+  if (data.chequeNo) {
+    const dup = await prisma.payment.findFirst({ where: { deletedAt: null, clientId: data.clientId, chequeNo: data.chequeNo, chequeStatus: { not: "BOUNCED" } } });
+    if (dup) throw new ActionError("billing.duplicateCheque");
+  }
   const payment = await prisma.$transaction(async (tx) => {
     const allocations = requested ?? (data.invoiceId ? [{ invoiceId: data.invoiceId, amount: data.amount }] : []);
     const open = await openInvoices(user, data.clientId, tx);

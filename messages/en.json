@@ -340,7 +340,9 @@
     "ExecutionActionType": { "DECISION": "Execution decision", "BANK_ATTACHMENT": "Bank account attachment", "TRAVEL_BAN": "Travel ban", "TRAVEL_BAN_LIFTED": "Travel ban lifted", "PROPERTY_ATTACHMENT": "Property attachment", "VEHICLE_ATTACHMENT": "Vehicle attachment", "ATTACHMENT_LIFTED": "Attachment lifted", "EXECUTION_HEARING": "Execution hearing", "AMOUNT_COLLECTED": "Amount collected", "DEPOSIT": "Court deposit", "EXPERT_REPORT": "Expert report", "VALUATION": "Valuation", "AUCTION": "Auction", "COURT_FEE": "Court fee", "REQUEST": "Execution request", "OTHER": "Other" },
     "CourtUpdateKind": { "HEARING": "Hearing", "DECISION": "Decision", "EXECUTION": "Execution step", "PARTY": "Parties", "DOCUMENT": "Document", "STAGE": "Litigation stage", "NEW_CASE": "New case", "OTHER": "Other" },
     "CourtUpdateStatus": { "PENDING": "Awaiting review", "APPLIED": "Applied to case", "DISMISSED": "Dismissed" },
-    "CourtSystem": { "ADJD": "Abu Dhabi Judicial Department", "DUBAI": "Dubai Courts", "MOJ": "Ministry of Justice (federal courts)", "OTHER": "Other" }
+    "CourtSystem": { "ADJD": "Abu Dhabi Judicial Department", "DUBAI": "Dubai Courts", "MOJ": "Ministry of Justice (federal courts)", "OTHER": "Other" },
+    "CollectionAction": { "CALL": "Call", "EMAIL": "Email", "WHATSAPP": "WhatsApp", "VISIT": "Visit", "LETTER": "Demand letter", "LEGAL_ACTION": "Legal action", "OTHER": "Other" },
+    "ApprovalState": { "PENDING": "Awaiting reply", "APPROVED": "Approved", "DECLINED": "Declined" }
   },
   "clients": {
     "title": "Clients",
@@ -373,7 +375,9 @@
     "verify": "Mark verified",
     "unverify": "Remove verification",
     "confirmVerify": "Has the PoA been checked against the original and confirmed in force?",
-    "poaLinked": "The PoA is linked to cases; unlink it first"
+    "poaLinked": "The PoA is linked to cases; unlink it first",
+    "duplicate": "A client with the same Emirates ID, trade licence or TRN already exists",
+    "possibleDuplicates": "Possible duplicate clients"
   },
   "cases": {
     "title": "Cases",
@@ -482,7 +486,13 @@
     "viewAll": "View all",
     "noHearings": "No upcoming hearings",
     "noTasks": "You have no open tasks",
-    "noDeadlines": "No open deadlines"
+    "noDeadlines": "No open deadlines",
+    "receivables": "Outstanding receivables",
+    "pendingCourtUpdates": "Court updates to review",
+    "expiringPoas": "PoAs expiring in 30 days",
+    "inactiveCases": "Inactive cases",
+    "needsAttention": "Open cases with no activity for {days} days and no upcoming hearing",
+    "noActivity": "No activity"
   },
   "tasks": {
     "title": "Tasks",
@@ -575,7 +585,7 @@
     "invoices": "Invoices",
     "newInvoice": "New invoice",
     "trustBalance": "Trust balance",
-    "sections": { "invoices": "Invoices", "quotes": "Quotes", "payments": "Payments", "trust": "Client trust" },
+    "sections": { "invoices": "Invoices", "quotes": "Quotes", "payments": "Payments", "trust": "Client trust", "collections": "Collections" },
     "draft": "Draft",
     "draftInvoice": "Draft invoice",
     "taxInvoice": "Tax invoice",
@@ -655,7 +665,8 @@
     "allocationPositive": "Allocated amounts must be above zero",
     "allocationDuplicate": "The same invoice appears twice",
     "allocationExceeds": "Allocations exceed the receipt amount",
-    "allocationCurrency": "One receipt cannot settle invoices in different currencies"
+    "allocationCurrency": "One receipt cannot settle invoices in different currencies",
+    "duplicateCheque": "This cheque is already recorded for this client"
   },
   "accounting": {
     "newExpense": "New expense",
@@ -770,9 +781,21 @@
     "disableTwoFactor": "Disable 2FA",
     "twoFactorOn": "Two-factor authentication is on",
     "scanQr": "Scan the code with your authenticator app, then enter the 6-digit code",
-    "verify": "Verify and enable"
+    "verify": "Verify and enable",
+    "notifications": "Notification preferences",
+    "whatsappOptIn": "Receive notifications on WhatsApp",
+    "whatsappHelp": "Sent to the mobile number on your profile once WhatsApp is enabled in Settings.",
+    "emailOff": "Turn off email for these types",
+    "emailOffHelp": "In-app notifications are always kept.",
+    "types": { "hearing": "Hearings", "deadline": "Legal deadlines", "task": "Tasks", "appointment": "Appointments", "notice": "Legal notices", "filing": "Court filings", "courtUpdate": "Court updates", "poa": "Powers of attorney", "employeeDoc": "Employee documents", "invoice": "Invoices", "installment": "Fee instalments", "cheque": "Cheques", "collection": "Collection follow-ups", "escalation": "Overdue task escalations", "approval": "Client approvals", "message": "Client messages", "briefing": "Daily briefing" }
   },
-  "notifications": { "title": "Notifications", "empty": "No notifications", "markAllRead": "Mark all as read" },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read",
+    "email": "Email",
+    "status": { "SENT": "sent", "FAILED": "failed", "SKIPPED": "not configured", "OFF": "off by preference" }
+  },
   "hr": {
     "sections": { "employees": "Employees", "attendance": "Attendance", "leave": "Leave", "payroll": "Payroll" },
     "newEmployee": "New employee",
@@ -839,7 +862,7 @@
     "sifEmployeesMissing": "Employees without MOHRE person ID, routing code or IBAN: {list}"
   },
   "settings": {
-    "tabs": { "office": "Office", "courts": "Courts", "types": "Case types", "holidays": "Public holidays", "numbering": "Numbering", "deadlines": "Legal deadlines", "emails": "Message templates", "ai": "AI" },
+    "tabs": { "office": "Office", "courts": "Courts", "types": "Case types", "holidays": "Public holidays", "numbering": "Numbering", "deadlines": "Legal deadlines", "emails": "Message templates", "ai": "AI", "notifications": "Notifications & WhatsApp" },
     "office": "Office details",
     "addressAr": "Address (Arabic)",
     "addressEn": "Address (English)",
@@ -862,9 +885,25 @@
     "sequenceHelp": "The next number cannot go back to a number already used this year, so invoice numbers never repeat.",
     "presetsHelp": "Standard periods offered when adding a legal deadline to a case. Review them against the applicable law.",
     "newPreset": "New period",
-    "emails": { "hearingReminder": "Hearing reminder", "deadlineReminder": "Legal deadline reminder", "taskReminder": "Task reminder", "expiryReminder": "Document or PoA expiry", "invoiceOverdue": "Overdue invoice", "appointmentReminder": "Appointment reminder", "noticeDeadline": "Notice deadline", "filingFollowUp": "Court filing follow-up" },
+    "emails": { "hearingReminder": "Hearing reminder", "deadlineReminder": "Legal deadline reminder", "taskReminder": "Task reminder", "expiryReminder": "Document or PoA expiry", "invoiceOverdue": "Overdue invoice", "appointmentReminder": "Appointment reminder", "noticeDeadline": "Notice deadline", "filingFollowUp": "Court filing follow-up", "installmentDue": "Fee instalment due", "chequeDue": "Cheque due", "taskEscalation": "Overdue task escalation", "collectionFollowUp": "Collection follow-up" },
     "emailHelp": "Messages go out in each user's language. Keep the placeholders of the original template (such as matter and date in double braces) as they are.",
-    "sequenceBackwards": "Numbering cannot go back to a used number"
+    "sequenceBackwards": "Numbering cannot go back to a used number",
+    "whatsappTitle": "WhatsApp Business (Cloud API)",
+    "whatsappHelp": "Requires a Meta-approved WhatsApp Business account, a registered number and an approved message template. Nothing is sent until the credentials are entered and sending is enabled.",
+    "whatsappEnabled": "Send notifications on WhatsApp",
+    "phoneNumberId": "Phone number ID",
+    "accessToken": "Permanent access token",
+    "templateName": "Approved template name",
+    "templateHelp": "A Utility template with one body variable that carries the notification text",
+    "templateLangAr": "Arabic template language code",
+    "templateLangEn": "English template language code",
+    "whatsappReady": "WhatsApp is configured and enabled.",
+    "whatsappNotReady": "WhatsApp is off: notifications arrive in the app and by email only.",
+    "whatsappTest": "Send a test message to my number",
+    "emailNote": "Email goes through the SMTP server set in the environment variables; without it messages are only logged.",
+    "whatsappNoPhone": "Your profile has no valid mobile number",
+    "whatsappNotConfigured": "WhatsApp is not configured or not enabled",
+    "whatsappFailed": "Meta rejected the message; check the notification log"
   },
   "reports": {
     "tabs": { "cases": "Cases", "hearings": "Hearings", "time": "Time & productivity", "revenue": "Revenue & collections", "aging": "Receivables aging" },
@@ -905,7 +944,12 @@
     "noMessages": "No messages yet",
     "office": "Office",
     "reply": "Reply to client",
-    "noPortalUsers": "This client has no portal account yet; create one in Users & permissions so they can read the reply."
+    "noPortalUsers": "This client has no portal account yet; create one in Users & permissions so they can read the reply.",
+    "uploadTitle": "Send a document to the office",
+    "uploadHelp": "PDF, images, Word or Excel; it is filed under your account and your lawyer is notified.",
+    "fileType": "This file type is not allowed",
+    "uploadFolder": "From the client",
+    "uploadedBy": "New document from {client}"
   },
   "assistant": {
     "title": "AI assistant",
@@ -1062,5 +1106,36 @@
     "followUpTask": "Follow up: {title}",
     "alreadyReviewed": "This update was already reviewed",
     "applyEffect": { "HEARING": "A hearing is created on the case at that date, marked \"from court\", and the case team is notified.", "DECISION": "The decision is logged on the case, the next hearing is created if given, and the team is notified.", "EXECUTION": "The step is added to the execution log with its amount, and the team is notified.", "PARTY": "Logged on the case timeline; the team is notified.", "DOCUMENT": "Logged on the case timeline and the team is notified; upload the original from the Documents tab.", "STAGE": "Logged on the case timeline; the team is notified.", "NEW_CASE": "Logged on the selected case; the team is notified.", "OTHER": "Logged on the case timeline; the team is notified." }
+  },
+  "collections": {
+    "action": "Contact type",
+    "aging": "Aging",
+    "allClients": "All clients",
+    "empty": "No outstanding receivables",
+    "history": "Follow-up history",
+    "invoices": "Invoices",
+    "lastContact": "Last contact",
+    "logContact": "Log contact / follow-up",
+    "nextFollowUp": "Next follow-up",
+    "nextFollowUpHelp": "The assignee is reminded on this date",
+    "noNotes": "No follow-ups logged yet",
+    "nothingOwed": "This client owes nothing",
+    "oldestDue": "Oldest due date",
+    "openInvoices": "Outstanding invoices",
+    "outcome": "Outcome",
+    "overdueDays": "Days overdue",
+    "promise": "Promise to pay",
+    "promisedAmount": "Promised amount",
+    "promisedDate": "Promised date",
+    "buckets": { "current": "Not yet due", "d30": "1–30 days", "d60": "31–60 days", "d90": "61–90 days", "over90": "Over 90 days" }
+  },
+  "approvals": {
+    "title": "Approval requests",
+    "none": "No approval requests",
+    "request": "Ask the client to approve",
+    "requestHelp": "The client sees the request in the portal and is notified; their answer reaches you as a notification and is kept here.",
+    "awaiting": "Awaiting your approval",
+    "decision": "Decision",
+    "comment": "Comment (optional)"
   }
 }

@@ -3,6 +3,9 @@
 import { ActionError, defineAction } from "@/lib/action";
 import { prisma } from "@/lib/prisma";
 import { putFile } from "@/lib/storage";
+import { encryptSecret } from "@/lib/crypto";
+import { getWhatsAppSettings, sendWhatsApp } from "@/lib/whatsapp";
+import { whatsappSettingsSchema } from "../users/schema";
 import { DEFAULT_EMAIL_TEMPLATES, getDeadlinePresets, getEmailTemplates, getOffice, setSetting } from "@/lib/settings";
 import { courtSchema, emailTemplateSchema, holidaySchema, logoSchema, matterTypeSchema, officeSchema, presetSchema, sequenceSchema } from "./schema";
 
@@ -78,4 +81,19 @@ export const saveEmailTemplate = defineAction({ module: "settings", perm: "updat
   if (!(key in DEFAULT_EMAIL_TEMPLATES)) throw new ActionError("errors.notFound");
   await setSetting("emailTemplates", { ...(await getEmailTemplates()), [key]: input });
   return { id: key };
+});
+
+/** WhatsApp Business Cloud API settings; the access token is stored encrypted and an empty field keeps it. */
+export const saveWhatsAppSettings = defineAction({ module: "settings", perm: "update", entity: "Setting", schema: whatsappSettingsSchema }, async ({ accessToken, ...input }) => {
+  const current = await getWhatsAppSettings();
+  await setSetting("whatsapp", { ...current, ...input, accessTokenEnc: accessToken ? encryptSecret(accessToken) : current.accessTokenEnc });
+  return { id: "whatsapp", audit: { ...input, tokenChanged: !!accessToken } };
+});
+
+/** Sends the template to the signed-in user's own phone to check the configuration. */
+export const testWhatsApp = defineAction({ module: "settings", perm: "update", entity: "Setting" }, async (_i, { user }) => {
+  const me = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+  const r = await sendWhatsApp(me.phone, "Test / اختبار", me.locale);
+  if (r.status !== "SENT") throw new ActionError(r.error === "no_phone" ? "settings.whatsappNoPhone" : r.error === "not_configured" ? "settings.whatsappNotConfigured" : "settings.whatsappFailed");
+  return { id: "whatsapp" };
 });

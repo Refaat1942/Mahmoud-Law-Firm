@@ -340,7 +340,9 @@
     "ExecutionActionType": { "DECISION": "قرار تنفيذ", "BANK_ATTACHMENT": "حجز على حسابات بنكية", "TRAVEL_BAN": "منع سفر", "TRAVEL_BAN_LIFTED": "رفع منع السفر", "PROPERTY_ATTACHMENT": "حجز عقار", "VEHICLE_ATTACHMENT": "حجز مركبة", "ATTACHMENT_LIFTED": "رفع حجز", "EXECUTION_HEARING": "جلسة تنفيذ", "AMOUNT_COLLECTED": "مبلغ محصّل", "DEPOSIT": "إيداع لدى المحكمة", "EXPERT_REPORT": "تقرير خبرة", "VALUATION": "تقييم", "AUCTION": "مزاد", "COURT_FEE": "رسوم محكمة", "REQUEST": "طلب تنفيذ", "OTHER": "أخرى" },
     "CourtUpdateKind": { "HEARING": "جلسة", "DECISION": "قرار", "EXECUTION": "إجراء تنفيذ", "PARTY": "أطراف", "DOCUMENT": "مستند", "STAGE": "مرحلة التقاضي", "NEW_CASE": "دعوى جديدة", "OTHER": "أخرى" },
     "CourtUpdateStatus": { "PENDING": "بانتظار المراجعة", "APPLIED": "طُبّق على القضية", "DISMISSED": "مستبعد" },
-    "CourtSystem": { "ADJD": "دائرة القضاء – أبوظبي", "DUBAI": "محاكم دبي", "MOJ": "وزارة العدل (المحاكم الاتحادية)", "OTHER": "أخرى" }
+    "CourtSystem": { "ADJD": "دائرة القضاء – أبوظبي", "DUBAI": "محاكم دبي", "MOJ": "وزارة العدل (المحاكم الاتحادية)", "OTHER": "أخرى" },
+    "CollectionAction": { "CALL": "مكالمة", "EMAIL": "بريد إلكتروني", "WHATSAPP": "واتساب", "VISIT": "زيارة", "LETTER": "خطاب مطالبة", "LEGAL_ACTION": "إجراء قانوني", "OTHER": "أخرى" },
+    "ApprovalState": { "PENDING": "بانتظار الرد", "APPROVED": "موافَق عليه", "DECLINED": "مرفوض" }
   },
   "clients": {
     "title": "العملاء",
@@ -373,7 +375,9 @@
     "verify": "تأكيد التدقيق",
     "unverify": "إلغاء التدقيق",
     "confirmVerify": "هل تمت مطابقة الوكالة مع الأصل والتأكد من سريانها؟",
-    "poaLinked": "الوكالة مرتبطة بقضايا؛ افصلها أولًا"
+    "poaLinked": "الوكالة مرتبطة بقضايا؛ افصلها أولًا",
+    "duplicate": "يوجد عميل مسجّل بنفس رقم الهوية أو الرخصة التجارية أو الرقم الضريبي",
+    "possibleDuplicates": "عملاء قد يكونون مكرّرين"
   },
   "cases": {
     "title": "القضايا",
@@ -482,7 +486,13 @@
     "viewAll": "عرض الكل",
     "noHearings": "لا توجد جلسات قادمة",
     "noTasks": "لا توجد مهام مفتوحة لك",
-    "noDeadlines": "لا توجد مواعيد قانونية مفتوحة"
+    "noDeadlines": "لا توجد مواعيد قانونية مفتوحة",
+    "receivables": "المستحقات القائمة",
+    "pendingCourtUpdates": "تحديثات محاكم بانتظار المراجعة",
+    "expiringPoas": "وكالات تنتهي خلال 30 يوماً",
+    "inactiveCases": "قضايا بلا نشاط",
+    "needsAttention": "قضايا مفتوحة بلا نشاط منذ {days} يوماً ولا جلسات قادمة",
+    "noActivity": "لا نشاط"
   },
   "tasks": {
     "title": "المهام",
@@ -575,7 +585,7 @@
     "invoices": "الفواتير",
     "newInvoice": "فاتورة جديدة",
     "trustBalance": "رصيد الأمانات",
-    "sections": { "invoices": "الفواتير", "quotes": "عروض الأسعار", "payments": "المقبوضات", "trust": "أمانات العملاء" },
+    "sections": { "invoices": "الفواتير", "quotes": "عروض الأسعار", "payments": "المقبوضات", "trust": "أمانات العملاء", "collections": "التحصيل" },
     "draft": "مسودة",
     "draftInvoice": "مسودة فاتورة",
     "taxInvoice": "فاتورة ضريبية",
@@ -655,7 +665,8 @@
     "allocationPositive": "يجب أن يكون المبلغ المخصص أكبر من صفر",
     "allocationDuplicate": "الفاتورة مكررة في التوزيع",
     "allocationExceeds": "مجموع المبالغ الموزعة أكبر من مبلغ السند",
-    "allocationCurrency": "لا يمكن توزيع سند واحد على فواتير بعملات مختلفة"
+    "allocationCurrency": "لا يمكن توزيع سند واحد على فواتير بعملات مختلفة",
+    "duplicateCheque": "هذا الشيك مسجّل من قبل لنفس العميل"
   },
   "accounting": {
     "newExpense": "مصروف جديد",
@@ -770,9 +781,21 @@
     "disableTwoFactor": "إيقاف التحقق الثنائي",
     "twoFactorOn": "التحقق الثنائي مفعّل",
     "scanQr": "امسح الرمز بتطبيق المصادقة ثم أدخل الرمز المكون من 6 أرقام",
-    "verify": "تحقق وتفعيل"
+    "verify": "تحقق وتفعيل",
+    "notifications": "تفضيلات الإشعارات",
+    "whatsappOptIn": "استلام الإشعارات على واتساب",
+    "whatsappHelp": "تُرسل إلى رقم الجوال المسجّل في ملفك عند تفعيل واتساب من الإعدادات.",
+    "emailOff": "إيقاف البريد لهذه الأنواع",
+    "emailOffHelp": "تبقى الإشعارات داخل النظام في كل الأحوال.",
+    "types": { "hearing": "الجلسات", "deadline": "المواعيد القانونية", "task": "المهام", "appointment": "المواعيد", "notice": "الإنذارات", "filing": "طلبات المحاكم", "courtUpdate": "تحديثات المحاكم", "poa": "الوكالات", "employeeDoc": "مستندات الموظفين", "invoice": "الفواتير", "installment": "دفعات الأتعاب", "cheque": "الشيكات", "collection": "متابعة التحصيل", "escalation": "تصعيد المهام المتأخرة", "approval": "موافقات العملاء", "message": "رسائل العملاء", "briefing": "الملخص اليومي" }
   },
-  "notifications": { "title": "التنبيهات", "empty": "لا توجد تنبيهات", "markAllRead": "تحديد الكل كمقروء" },
+  "notifications": {
+    "title": "التنبيهات",
+    "empty": "لا توجد تنبيهات",
+    "markAllRead": "تحديد الكل كمقروء",
+    "email": "البريد",
+    "status": { "SENT": "أُرسل", "FAILED": "فشل", "SKIPPED": "غير مُفعّل", "OFF": "متوقف حسب التفضيل" }
+  },
   "hr": {
     "sections": { "employees": "الموظفون", "attendance": "الحضور", "leave": "الإجازات", "payroll": "الرواتب" },
     "newEmployee": "موظف جديد",
@@ -839,7 +862,7 @@
     "sifEmployeesMissing": "موظفون بدون الرقم الشخصي أو رمز البنك أو الآيبان: {list}"
   },
   "settings": {
-    "tabs": { "office": "بيانات المكتب", "courts": "المحاكم", "types": "أنواع القضايا", "holidays": "العطل الرسمية", "numbering": "الترقيم", "deadlines": "المواعيد القانونية", "emails": "قوالب الرسائل", "ai": "الذكاء الاصطناعي" },
+    "tabs": { "office": "بيانات المكتب", "courts": "المحاكم", "types": "أنواع القضايا", "holidays": "العطل الرسمية", "numbering": "الترقيم", "deadlines": "المواعيد القانونية", "emails": "قوالب الرسائل", "ai": "الذكاء الاصطناعي", "notifications": "الإشعارات وواتساب" },
     "office": "بيانات المكتب",
     "addressAr": "العنوان بالعربي",
     "addressEn": "العنوان بالإنجليزي",
@@ -862,9 +885,25 @@
     "sequenceHelp": "لا يمكن إرجاع الرقم التالي لرقم استُخدم في السنة الحالية حتى لا تتكرر أرقام الفواتير.",
     "presetsHelp": "المهل المعتادة التي تظهر عند إضافة موعد قانوني للقضية. راجعها وفق القانون المعمول به.",
     "newPreset": "مهلة جديدة",
-    "emails": { "hearingReminder": "تذكير بجلسة", "deadlineReminder": "تذكير بموعد قانوني", "taskReminder": "تذكير بمهمة", "expiryReminder": "تنبيه انتهاء وثيقة أو وكالة", "invoiceOverdue": "فاتورة متأخرة", "appointmentReminder": "تذكير بموعد", "noticeDeadline": "انتهاء مهلة إنذار", "filingFollowUp": "متابعة طلب لدى المحكمة" },
+    "emails": { "hearingReminder": "تذكير بجلسة", "deadlineReminder": "تذكير بموعد قانوني", "taskReminder": "تذكير بمهمة", "expiryReminder": "تنبيه انتهاء وثيقة أو وكالة", "invoiceOverdue": "فاتورة متأخرة", "appointmentReminder": "تذكير بموعد", "noticeDeadline": "انتهاء مهلة إنذار", "filingFollowUp": "متابعة طلب لدى المحكمة", "installmentDue": "دفعة أتعاب مستحقة", "chequeDue": "شيك مستحق", "taskEscalation": "تصعيد مهمة متأخرة", "collectionFollowUp": "متابعة تحصيل" },
     "emailHelp": "تُرسل الرسائل بلغة المستخدم. أبقِ المتغيرات الموجودة في القالب الأصلي (مثل matter و date بين أقواس مزدوجة) كما هي.",
-    "sequenceBackwards": "لا يمكن إرجاع الترقيم لرقم مستخدم"
+    "sequenceBackwards": "لا يمكن إرجاع الترقيم لرقم مستخدم",
+    "whatsappTitle": "واتساب للأعمال (Cloud API)",
+    "whatsappHelp": "يتطلب حساب WhatsApp Business معتمداً من Meta ورقماً مسجلاً وقالب رسالة معتمداً. لا تُرسل أي رسالة قبل إدخال بيانات الاعتماد وتفعيل الخيار.",
+    "whatsappEnabled": "تفعيل الإرسال عبر واتساب",
+    "phoneNumberId": "معرّف رقم الهاتف (Phone number ID)",
+    "accessToken": "رمز الوصول الدائم",
+    "templateName": "اسم القالب المعتمد",
+    "templateHelp": "قالب من فئة Utility يحتوي متغيراً واحداً في النص يُوضع فيه نص الإشعار",
+    "templateLangAr": "رمز لغة القالب العربي",
+    "templateLangEn": "رمز لغة القالب الإنجليزي",
+    "whatsappReady": "واتساب مُعدّ ومفعّل.",
+    "whatsappNotReady": "واتساب غير مُفعّل: الإشعارات تصل داخل النظام وبالبريد فقط.",
+    "whatsappTest": "إرسال رسالة تجربة إلى رقمي",
+    "emailNote": "البريد يُرسل عبر خادم SMTP المحدد في متغيرات البيئة؛ بدونه تُسجّل الرسائل ولا تُرسل.",
+    "whatsappNoPhone": "لا يوجد رقم جوال صالح في ملفك",
+    "whatsappNotConfigured": "واتساب غير مُعدّ أو غير مفعّل",
+    "whatsappFailed": "رفضت Meta الرسالة؛ راجع سجل الإشعارات"
   },
   "reports": {
     "tabs": { "cases": "القضايا", "hearings": "الجلسات", "time": "الوقت والإنتاجية", "revenue": "الإيرادات والتحصيل", "aging": "أعمار الديون" },
@@ -905,7 +944,12 @@
     "noMessages": "لا توجد رسائل بعد",
     "office": "المكتب",
     "reply": "رد على العميل",
-    "noPortalUsers": "لا يوجد حساب بوابة لهذا العميل بعد؛ أنشئه من المستخدمين والصلاحيات ليتمكن من قراءة الرد."
+    "noPortalUsers": "لا يوجد حساب بوابة لهذا العميل بعد؛ أنشئه من المستخدمين والصلاحيات ليتمكن من قراءة الرد.",
+    "uploadTitle": "إرسال مستند للمكتب",
+    "uploadHelp": "PDF أو صور أو Word أو Excel؛ يُحفظ في ملفك ويُخطر المحامي المسؤول.",
+    "fileType": "نوع الملف غير مسموح به",
+    "uploadFolder": "مستندات من العميل",
+    "uploadedBy": "مستند جديد من {client}"
   },
   "assistant": {
     "title": "المساعد الذكي",
@@ -1062,5 +1106,36 @@
     "followUpTask": "متابعة: {title}",
     "alreadyReviewed": "تمت مراجعة هذا التحديث",
     "applyEffect": { "HEARING": "تُنشأ جلسة في القضية بالتاريخ المحدد مع وسم «من المحكمة»، ويُبلَّغ فريق القضية.", "DECISION": "يُسجل القرار في سجل القضية، وتُنشأ الجلسة القادمة إن وُجدت، ويُبلَّغ الفريق.", "EXECUTION": "يُضاف الإجراء إلى سجل التنفيذ بمبلغه، ويُبلَّغ الفريق.", "PARTY": "يُسجل في سجل القضية ويُبلَّغ الفريق.", "DOCUMENT": "يُسجل في سجل القضية ويُبلَّغ الفريق؛ ارفع المستند الأصلي من تبويب المستندات.", "STAGE": "يُسجل في سجل القضية ويُبلَّغ الفريق.", "NEW_CASE": "يُسجل في سجل القضية المختارة ويُبلَّغ الفريق.", "OTHER": "يُسجل في سجل القضية ويُبلَّغ الفريق." }
+  },
+  "collections": {
+    "action": "نوع التواصل",
+    "aging": "التقادم",
+    "allClients": "كل العملاء",
+    "empty": "لا توجد مستحقات قائمة",
+    "history": "سجل المتابعة",
+    "invoices": "عدد الفواتير",
+    "lastContact": "آخر تواصل",
+    "logContact": "تسجيل تواصل / متابعة",
+    "nextFollowUp": "المتابعة التالية",
+    "nextFollowUpHelp": "يصل تذكير للمسؤول في هذا التاريخ",
+    "noNotes": "لا يوجد سجل متابعة بعد",
+    "nothingOwed": "لا توجد فواتير مستحقة على هذا العميل",
+    "oldestDue": "أقدم استحقاق",
+    "openInvoices": "الفواتير المستحقة",
+    "outcome": "النتيجة",
+    "overdueDays": "أيام التأخير",
+    "promise": "وعد بالسداد",
+    "promisedAmount": "المبلغ الموعود",
+    "promisedDate": "تاريخ السداد الموعود",
+    "buckets": { "current": "غير مستحقة بعد", "d30": "1–30 يوماً", "d60": "31–60 يوماً", "d90": "61–90 يوماً", "over90": "أكثر من 90 يوماً" }
+  },
+  "approvals": {
+    "title": "طلبات الموافقة",
+    "none": "لا توجد طلبات موافقة",
+    "request": "طلب موافقة من العميل",
+    "requestHelp": "يظهر الطلب للعميل في البوابة ويُخطر بها؛ يصلك رده كإشعار ويُحفظ هنا.",
+    "awaiting": "بانتظار موافقتك",
+    "decision": "القرار",
+    "comment": "ملاحظة (اختياري)"
   }
 }

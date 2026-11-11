@@ -42,6 +42,8 @@ export const ENUMS = {
   CourtUpdateKind: ["HEARING", "DECISION", "EXECUTION", "PARTY", "DOCUMENT", "STAGE", "NEW_CASE", "OTHER"],
   CourtUpdateStatus: ["PENDING", "APPLIED", "DISMISSED"],
   CourtSystem: ["ADJD", "DUBAI", "MOJ", "OTHER"],
+  CollectionAction: ["CALL", "EMAIL", "WHATSAPP", "VISIT", "LETTER", "LEGAL_ACTION", "OTHER"],
+  ApprovalState: ["PENDING", "APPROVED", "DECLINED"],
   NoticeMethod: ["NOTARY", "COURT_BAILIFF", "COURIER", "REGISTERED_MAIL", "EMAIL", "WHATSAPP", "HAND_DELIVERY", "OTHER"],
   NoticeStatus: ["DRAFT", "SENT", "DELIVERED", "REFUSED", "FAILED"],
   Currency: ["AED", "USD", "EUR", "SAR", "GBP"],

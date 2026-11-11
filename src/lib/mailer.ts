@@ -8,10 +8,12 @@ const transport = process.env.SMTP_HOST
     })
   : null;
 
-export async function sendMail(to: string, subject: string, text: string) {
+/** Sends an email; returns SKIPPED (logged only) when SMTP is not configured. Throws on SMTP errors. */
+export async function sendMail(to: string, subject: string, text: string): Promise<"SENT" | "SKIPPED"> {
   if (!transport) {
     console.info(`[mail] to=${to} subject=${subject}\n${text}`);
-    return;
+    return "SKIPPED";
   }
   await transport.sendMail({ from: process.env.SMTP_FROM, to, subject, text });
+  return "SENT";
 }

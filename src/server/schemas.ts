@@ -13,6 +13,7 @@ import * as portal from "./portal/schema";
 import * as ai from "./ai/schema";
 import * as appointments from "./appointments/schema";
 import * as notices from "./notices/schema";
+import * as collections from "./collections/schema";
 import * as courts from "./courts/schema";
 
 /** Lets client forms look up a schema by key, since Zod schemas cannot be passed from server components. */
@@ -23,6 +24,8 @@ export const schemas = {
   profile: users.profileSchema,
   passwordChange: users.passwordChangeSchema,
   totp: users.totpSchema,
+  notificationPrefs: users.notificationPrefsSchema,
+  whatsappSettings: users.whatsappSettingsSchema,
   client: clients.clientSchema,
   contact: clients.contactSchema,
   poa: clients.poaSchema,
@@ -74,9 +77,13 @@ export const schemas = {
   preset: settings.presetSchema,
   emailTemplate: settings.emailTemplateSchema,
   message: portal.messageSchema,
+  approvalRequest: portal.approvalRequestSchema,
+  approvalResponse: portal.approvalResponseSchema,
+  portalUpload: portal.portalUploadSchema,
   aiSettings: ai.aiSettingsSchema,
   appointment: appointments.appointmentSchema,
   notice: notices.noticeSchema,
+  collectionNote: collections.collectionNoteSchema,
   filing: courts.filingSchema,
   executionAction: courts.executionActionSchema,
   courtUpdate: courts.courtUpdateSchema,

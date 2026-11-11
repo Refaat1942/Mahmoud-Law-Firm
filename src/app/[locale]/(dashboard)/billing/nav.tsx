@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-const SECTIONS = ["invoices", "quotes", "payments", "trust"] as const;
+const SECTIONS = ["invoices", "quotes", "payments", "collections", "trust"] as const;
 
 /** Section links shared by the billing pages. */
 export async function BillingNav({ active }: { active: (typeof SECTIONS)[number] }) {
