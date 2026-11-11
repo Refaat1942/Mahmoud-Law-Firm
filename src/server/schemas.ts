@@ -13,6 +13,7 @@ import * as portal from "./portal/schema";
 import * as ai from "./ai/schema";
 import * as appointments from "./appointments/schema";
 import * as notices from "./notices/schema";
+import * as courts from "./courts/schema";
 
 /** Lets client forms look up a schema by key, since Zod schemas cannot be passed from server components. */
 export const schemas = {
@@ -76,6 +77,11 @@ export const schemas = {
   aiSettings: ai.aiSettingsSchema,
   appointment: appointments.appointmentSchema,
   notice: notices.noticeSchema,
+  filing: courts.filingSchema,
+  executionAction: courts.executionActionSchema,
+  courtUpdate: courts.courtUpdateSchema,
+  applyUpdate: courts.applyUpdateSchema,
+  updatesCsv: courts.updatesCsvSchema,
 } as const;
 
 export type SchemaKey = keyof typeof schemas;

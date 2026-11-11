@@ -86,6 +86,12 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplates = {
     bodyAr: "تنتهي مهلة الإنذار {{title}} الموجّه إلى {{counterparty}} بتاريخ {{date}}.",
     bodyEn: "The notice {{title}} to {{counterparty}} expires on {{date}}.",
   },
+  filingFollowUp: {
+    subjectAr: "متابعة طلب لدى المحكمة: {{title}}",
+    subjectEn: "Court filing follow-up: {{title}}",
+    bodyAr: "موعد متابعة {{title}} في القضية {{matter}} بتاريخ {{date}}.",
+    bodyEn: "Follow up {{title}} in {{matter}} on {{date}}.",
+  },
   invoiceOverdue: {
     subjectAr: "فاتورة متأخرة: {{number}}",
     subjectEn: "Overdue invoice: {{number}}",
