@@ -18,6 +18,21 @@ export function quoteScope(user: CurrentUser): Prisma.QuoteWhereInput {
 }
 
 /**
+ * Payments a user may see: everything for roles that see every matter; otherwise only payments
+ * allocated to invoices inside their invoice scope (unallocated "on account" payments stay hidden).
+ */
+export function paymentScope(user: CurrentUser): Prisma.PaymentWhereInput {
+  if (user.scopeAll) return { deletedAt: null };
+  return { deletedAt: null, invoice: { is: invoiceScope(user) } };
+}
+
+/** Trust movements a user may see: all for scope-all roles, otherwise those on their matters. */
+export function trustScope(user: CurrentUser): Prisma.TrustTransactionWhereInput {
+  if (user.scopeAll) return {};
+  return { matter: { is: matterScope(user) } };
+}
+
+/**
  * Payments that count towards an invoice: not deleted and not a bounced cheque.
  * chequeStatus is NULL for non-cheque payments, and `NOT (x = 'BOUNCED')` is NULL in SQL, so the null case is explicit.
  */

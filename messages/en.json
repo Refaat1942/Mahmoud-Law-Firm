@@ -37,7 +37,8 @@
       "invalid": "Incorrect email or password",
       "locked": "Account temporarily locked after repeated failed attempts. Try again in 15 minutes",
       "otp_required": "Enter the code from your authenticator app",
-      "otp_invalid": "Invalid verification code"
+      "otp_invalid": "Invalid verification code",
+      "throttled": "Too many failed sign-ins from this device. Try again in 15 minutes"
     }
   },
   "common": {
