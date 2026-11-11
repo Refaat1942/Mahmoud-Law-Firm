@@ -13,6 +13,7 @@ import { deleteMatter } from "@/server/matters/actions";
 import { OverviewTab } from "./tabs/overview";
 import { PartiesTab } from "./tabs/parties";
 import { PoaTab } from "./tabs/poa";
+import { CourtTab } from "./tabs/court";
 import { TeamTab } from "./tabs/team";
 import { HearingsTab } from "./tabs/hearings";
 import { DeadlinesTab } from "./tabs/deadlines";
@@ -46,6 +47,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     { key: "poa", label: t("clients.powers") },
     { key: "team", label: t("cases.team") },
     ...(can(user, "hearings") ? [{ key: "hearings", label: t("nav.hearings") }, { key: "deadlines", label: t("cases.deadlines") }] : []),
+    { key: "court", label: t("courts.caseTab") },
     ...(can(user, "tasks") ? [{ key: "tasks", label: t("nav.tasks") }] : []),
     ...(can(user, "documents") ? [{ key: "documents", label: t("nav.documents") }] : []),
     ...(can(user, "time") ? [{ key: "time", label: t("nav.time") }] : []),
@@ -58,6 +60,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     {
       parties: <PartiesTab {...props} />,
       poa: <PoaTab {...props} />,
+      court: <CourtTab {...props} />,
       team: <TeamTab {...props} />,
       hearings: <HearingsTab {...props} />,
       deadlines: <DeadlinesTab {...props} />,

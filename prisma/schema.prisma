@@ -46,6 +46,7 @@ model User {
   appointmentsOrganized Appointment[]         @relation("AppointmentOrganizer")
   appointmentsAttending AppointmentAttendee[] @relation("AppointmentAttendee")
   noticesAssigned       LegalNotice[]         @relation("NoticeAssignee")
+  filingsAssigned       CourtFiling[]         @relation("FilingAssignee")
   auditLogs       AuditLog[]
   deadlines       Deadline[]
   matterEvents    MatterEvent[]
@@ -285,6 +286,9 @@ model Matter {
   timeEntries   TimeEntry[]
   feeAgreement  FeeAgreement?
   powers        MatterPoa[]
+  filings       CourtFiling[]
+  executionActions ExecutionAction[]
+  courtUpdates  CourtUpdate[]
   appointments  Appointment[]
   notices       LegalNotice[]
   invoices      Invoice[]
@@ -330,6 +334,8 @@ model MatterEvent {
   details   String?
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+  /// COURT for entries applied from a court update.
+  source    UpdateSource @default(OFFICE)
   createdAt DateTime @default(now())
 
   @@index([matterId, createdAt])
@@ -362,6 +368,8 @@ model Hearing {
   previous      Hearing?      @relation("HearingChain", fields: [previousId], references: [id])
   next          Hearing?      @relation("HearingChain")
   reminderSent  Boolean       @default(false)
+  /// COURT when the hearing was created from a court update rather than by staff.
+  source        UpdateSource  @default(OFFICE)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
@@ -1236,4 +1244,143 @@ model LegalNotice {
   deletedAt      DateTime?
 
   @@index([dueDate])
+}
+
+// ───────────── Court operations: requests, communications, execution, court updates ─────────────
+
+enum UpdateSource {
+  OFFICE
+  COURT
+}
+
+enum FilingKind {
+  REQUEST
+  COMMUNICATION
+}
+
+enum FilingDirection {
+  SUBMITTED
+  RECEIVED
+}
+
+enum FilingStatus {
+  PENDING
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  ANSWERED
+  CLOSED
+}
+
+/// Requests filed with or received from a court, and court communications that need follow-up.
+model CourtFiling {
+  id            String          @id @default(cuid())
+  kind          FilingKind      @default(REQUEST)
+  direction     FilingDirection @default(SUBMITTED)
+  matterId      String
+  matter        Matter          @relation(fields: [matterId], references: [id])
+  title         String
+  reference     String?
+  status        FilingStatus    @default(PENDING)
+  submittedAt   DateTime?
+  responseDueAt DateTime?
+  respondedAt   DateTime?
+  followUpAt    DateTime?
+  response      String?
+  assigneeId    String?
+  assignee      User?           @relation("FilingAssignee", fields: [assigneeId], references: [id])
+  createdById   String?
+  notes         String?
+  reminderSent  Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  @@index([matterId])
+  @@index([followUpAt])
+}
+
+enum ExecutionActionType {
+  DECISION
+  BANK_ATTACHMENT
+  TRAVEL_BAN
+  TRAVEL_BAN_LIFTED
+  PROPERTY_ATTACHMENT
+  VEHICLE_ATTACHMENT
+  ATTACHMENT_LIFTED
+  EXECUTION_HEARING
+  AMOUNT_COLLECTED
+  DEPOSIT
+  EXPERT_REPORT
+  VALUATION
+  AUCTION
+  COURT_FEE
+  REQUEST
+  OTHER
+}
+
+/// One step in an execution file: court decisions, attachments, bans, auctions, money collected or paid.
+model ExecutionAction {
+  id            String              @id @default(cuid())
+  matterId      String
+  matter        Matter              @relation(fields: [matterId], references: [id])
+  type          ExecutionActionType
+  date          DateTime
+  title         String
+  details       String?
+  amount        Decimal?            @db.Decimal(14, 2)
+  source        UpdateSource        @default(OFFICE)
+  courtUpdateId String?             @unique
+  createdById   String?
+  createdAt     DateTime            @default(now())
+  deletedAt     DateTime?
+
+  @@index([matterId, date])
+}
+
+enum CourtUpdateKind {
+  HEARING
+  DECISION
+  EXECUTION
+  PARTY
+  DOCUMENT
+  STAGE
+  NEW_CASE
+  OTHER
+}
+
+enum CourtUpdateStatus {
+  PENDING
+  APPLIED
+  DISMISSED
+}
+
+/// An update from a court system (adapter) or entered/imported by staff, reviewed before it changes a case.
+model CourtUpdate {
+  id            String               @id @default(cuid())
+  /// "manual", "csv" or an adapter key (e.g. "adjd", "dubai").
+  source        String               @default("manual")
+  externalId    String?
+  courtSystem   String?
+  courtCaseNo   String
+  matterId      String?
+  matter        Matter?              @relation(fields: [matterId], references: [id])
+  kind          CourtUpdateKind
+  executionType ExecutionActionType?
+  occurredAt    DateTime
+  title         String
+  details       String?
+  amount        Decimal?             @db.Decimal(14, 2)
+  nextHearingAt DateTime?
+  payload       Json?
+  status        CourtUpdateStatus    @default(PENDING)
+  appliedAt     DateTime?
+  appliedById   String?
+  createdById   String?
+  createdAt     DateTime             @default(now())
+
+  @@unique([source, externalId])
+  @@index([status, createdAt])
+  @@index([courtCaseNo])
 }

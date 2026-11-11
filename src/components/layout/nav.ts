@@ -11,6 +11,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "calendar", href: "/calendar", icon: "CalendarDays", module: "hearings" },
   { key: "appointments", href: "/appointments", icon: "CalendarClock", module: "hearings" },
   { key: "notices", href: "/notices", icon: "Megaphone", module: "matters" },
+  { key: "courtFilings", href: "/court-filings", icon: "FileStack", module: "matters" },
+  { key: "courtUpdates", href: "/court-updates", icon: "RefreshCw", module: "matters" },
   { key: "updates", href: "/updates", icon: "Inbox", module: "dashboard" },
   { key: "tasks", href: "/tasks", icon: "ListChecks", module: "tasks" },
   { key: "documents", href: "/documents", icon: "FolderOpen", module: "documents" },

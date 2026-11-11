@@ -40,7 +40,7 @@ async function matterRecipients(matter: { responsibleId: string | null; members:
 export async function runReminders(now = new Date()) {
   const office = await getOffice();
   const horizon = addDays(startOfDay(now), office.reminderDaysBefore + 1);
-  const counts = { hearings: 0, deadlines: 0, tasks: 0, appointments: 0, notices: 0, poa: 0, employeeDocs: 0, invoices: 0 };
+  const counts = { hearings: 0, deadlines: 0, tasks: 0, appointments: 0, notices: 0, filings: 0, poa: 0, employeeDocs: 0, invoices: 0 };
 
   const hearings = await prisma.hearing.findMany({
     where: { deletedAt: null, status: "SCHEDULED", reminderSent: false, date: { gte: now, lt: horizon }, matter: { deletedAt: null } },
@@ -116,6 +116,25 @@ export async function runReminders(now = new Date()) {
     }
     await prisma.legalNotice.update({ where: { id: n.id }, data: { reminderSent: true } });
     counts.notices++;
+  }
+
+  const filings = await prisma.courtFiling.findMany({
+    where: {
+      deletedAt: null,
+      reminderSent: false,
+      status: { in: ["PENDING", "SUBMITTED", "UNDER_REVIEW"] },
+      OR: [{ followUpAt: { lt: horizon } }, { responseDueAt: { lt: horizon } }],
+      matter: { deletedAt: null },
+    },
+    include: { matter: { include: { members: true } } },
+  });
+  for (const f of filings) {
+    const when = [f.followUpAt, f.responseDueAt].filter(Boolean).sort((a, b) => +a! - +b!)[0]!;
+    for (const userId of await matterRecipients(f.matter, f.assigneeId)) {
+      await notify({ userId, type: "filing", template: "filingFollowUp", vars: { title: f.title, matter: f.matter.fileNo, date: fmt(when) }, link: `/court-filings/${f.id}` });
+    }
+    await prisma.courtFiling.update({ where: { id: f.id }, data: { reminderSent: true } });
+    counts.filings++;
   }
 
   const expiryHorizon = addDays(startOfDay(now), EXPIRY_WINDOW_DAYS);
