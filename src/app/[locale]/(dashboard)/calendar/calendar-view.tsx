@@ -11,9 +11,9 @@ import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-export type CalendarEvent = { id: string; title: string; start: string; allDay?: boolean; url: string; kind: "hearing" | "deadline" | "task"; done: boolean };
+export type CalendarEvent = { id: string; title: string; start: string; allDay?: boolean; url: string; kind: "hearing" | "deadline" | "task" | "appointment"; done: boolean };
 
-const COLORS = { hearing: "#1b2a4a", deadline: "#c53030", task: "#c9a24b" };
+const COLORS = { hearing: "#1b2a4a", deadline: "#c53030", task: "#c9a24b", appointment: "#2b6cb0" };
 
 export function CalendarView({
   events,
@@ -44,7 +44,7 @@ export function CalendarView({
           ))}
         </Select>
         <div className="flex gap-3 text-xs">
-          {(["hearing", "deadline", "task"] as const).map((k) => (
+          {(["hearing", "deadline", "task", "appointment"] as const).map((k) => (
             <span key={k} className="flex items-center gap-1">
               <span className="size-3 rounded" style={{ background: COLORS[k] }} /> {t(`hearings.legend.${k}`)}
             </span>

@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { can, requirePermission } from "@/lib/session";
 import { localized } from "@/lib/utils";
+import { sum } from "@/lib/money";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -21,7 +22,7 @@ export default async function PaymentsPage() {
   const locale = await getLocale();
   const payments = await prisma.payment.findMany({
     where: paymentScope(user),
-    include: { client: true, invoice: true, bankAccount: true },
+    include: { client: true, invoice: true, bankAccount: true, allocations: { include: { invoice: true } } },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: 3000,
   });
@@ -92,6 +93,7 @@ export default async function PaymentsPage() {
           { key: "date", label: t("f.date"), type: "date" },
           { key: "client", label: t("f.client") },
           { key: "invoice", label: t("f.invoice"), href: "/billing/invoices/:invoiceId" },
+          { key: "onAccount", label: t("billing.onAccountLeft"), type: "money", href: "/billing/payments/:id/allocate" },
           { key: "method", label: t("f.method"), type: "badge", enumKey: "PaymentMethod" },
           { key: "bank", label: t("f.bankAccount") },
           { key: "reference", label: t("f.reference") },
@@ -103,7 +105,9 @@ export default async function PaymentsPage() {
           number: p.number,
           date: p.date.toISOString(),
           client: localized(p.client, locale),
-          invoice: p.invoice?.number ?? t("billing.onAccount"),
+          // A receipt split over several invoices lists all their numbers.
+          invoice: p.allocations.length ? p.allocations.map((a) => a.invoice.number).join("، ") : t("billing.onAccount"),
+          onAccount: p.chequeStatus === "BOUNCED" ? "0" : p.amount.minus(sum(p.allocations.map((a) => a.amount))).toString(),
           invoiceId: p.invoiceId ?? "",
           method: p.method,
           bank: localized(p.bankAccount, locale),

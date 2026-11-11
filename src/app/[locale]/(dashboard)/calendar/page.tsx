@@ -4,6 +4,7 @@ import { can, matterScope, requirePermission } from "@/lib/session";
 import { addDays, localized } from "@/lib/utils";
 import { PageHeader } from "@/components/page";
 import { userOptions } from "@/server/options";
+import { appointmentScope } from "@/server/appointments/queries";
 import { CalendarView, type CalendarEvent } from "./calendar-view";
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ lawyer?: string }> }) {
@@ -15,7 +16,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const to = addDays(new Date(), 365);
   const scope = matterScope(user);
 
-  const [hearings, deadlines, tasks] = await Promise.all([
+  const [hearings, deadlines, tasks, appointments] = await Promise.all([
     prisma.hearing.findMany({
       where: { deletedAt: null, date: { gte: from, lte: to }, matter: scope, ...(lawyer ? { lawyerId: lawyer } : {}) },
       include: { matter: true, court: true },
@@ -33,6 +34,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           },
         })
       : [],
+    prisma.appointment.findMany({
+      where: { AND: [appointmentScope(user), { startAt: { gte: from, lte: to } }, lawyer ? { OR: [{ organizerId: lawyer }, { attendees: { some: { userId: lawyer } } }] } : {}] },
+    }),
   ]);
 
   const events: CalendarEvent[] = [
@@ -52,6 +56,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       url: `/${locale}/cases/${d.matterId}?tab=deadlines`,
       kind: "deadline" as const,
       done: d.done,
+    })),
+    ...appointments.map((a) => ({
+      id: `a-${a.id}`,
+      title: `● ${a.title}`,
+      start: a.startAt.toISOString(),
+      url: `/${locale}/appointments/${a.id}`,
+      kind: "appointment" as const,
+      done: a.status !== "SCHEDULED",
     })),
     ...tasks.map((x) => ({
       id: `t-${x.id}`,

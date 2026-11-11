@@ -1,11 +1,12 @@
 "use server";
 
 import { getTranslations } from "next-intl/server";
-import { defineAction } from "@/lib/action";
+import { ActionError, defineAction } from "@/lib/action";
 import { prisma } from "@/lib/prisma";
 import { nextNumber } from "@/lib/sequence";
+import { startOfDay } from "@/lib/utils";
 import { assertMatterAccess, logEvent } from "./access";
-import { eventSchema, feeAgreementSchema, installmentSchema, matterPartySchema, matterSchema, memberSchema } from "./schema";
+import { eventSchema, feeAgreementSchema, installmentSchema, matterPartySchema, matterSchema, memberSchema, poaLinkSchema } from "./schema";
 
 export const createMatter = defineAction({ module: "matters", perm: "create", entity: "Matter", schema: matterSchema }, async (input, { user }) => {
   const t = await getTranslations("cases.events");
@@ -120,4 +121,28 @@ export const deleteInstallment = defineAction({ module: "matters", perm: "update
   await assertMatterAccess(user, inst.agreement.matterId);
   if (!inst.invoiceId) await prisma.feeInstallment.delete({ where: { id } });
   return { id };
+});
+
+/** Links a verified, unexpired PoA of the same client to the case. */
+export const linkPoa = defineAction({ module: "matters", perm: "update", entity: "MatterPoa", schema: poaLinkSchema }, async ({ poaId }, { user }, matterId: string) => {
+  await assertMatterAccess(user, matterId);
+  const [m, p] = await Promise.all([
+    prisma.matter.findUniqueOrThrow({ where: { id: matterId } }),
+    prisma.powerOfAttorney.findFirst({ where: { id: poaId, deletedAt: null } }),
+  ]);
+  if (!p || p.clientId !== m.clientId) throw new ActionError("cases.poaOtherClient");
+  if (!p.verified) throw new ActionError("cases.poaUnverified");
+  if (p.expiresAt && p.expiresAt < startOfDay()) throw new ActionError("cases.poaExpired");
+  const t = await getTranslations("cases");
+  await prisma.$transaction(async (tx) => {
+    await tx.matterPoa.create({ data: { matterId, poaId, linkedById: user.id } });
+    await logEvent(tx, matterId, "poa", t("events.poaLinked", { number: p.number }), user.id);
+  });
+  return { id: matterId, audit: { poaId, number: p.number } };
+});
+
+export const unlinkPoa = defineAction({ module: "matters", perm: "update", entity: "MatterPoa" }, async (_i, { user }, matterId: string, poaId: string) => {
+  await assertMatterAccess(user, matterId);
+  await prisma.matterPoa.delete({ where: { matterId_poaId: { matterId, poaId } } });
+  return { id: matterId, audit: { poaId } };
 });

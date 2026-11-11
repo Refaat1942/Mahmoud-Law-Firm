@@ -26,7 +26,8 @@ export type FieldType =
   | "select"
   | "checkbox"
   | "tags"
-  | "file";
+  | "file"
+  | "multiselect";
 
 export type Field = {
   name: string;
@@ -54,11 +55,12 @@ function prepareDefaults(fields: Field[], values: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   for (const f of fields) {
     const v = values[f.name];
-    if (v === null || v === undefined) out[f.name] = f.type === "checkbox" ? false : "";
+    if (v === null || v === undefined) out[f.name] = f.type === "checkbox" ? false : f.type === "multiselect" ? [] : "";
     else if (f.type === "date") out[f.name] = String(v).slice(0, 10);
     else if (f.type === "datetime") out[f.name] = toLocalInput(String(v));
     else if (f.type === "tags") out[f.name] = Array.isArray(v) ? v.join(", ") : String(v);
     else if (f.type === "file") out[f.name] = undefined;
+    else if (f.type === "multiselect") out[f.name] = Array.isArray(v) ? v : [String(v)];
     else out[f.name] = typeof v === "number" ? String(v) : v;
   }
   return out;
@@ -165,6 +167,14 @@ export function EntityForm({
                   ) : f.type === "select" ? (
                     <Select {...common}>
                       <option value="">{f.placeholder ?? t("common.select")}</option>
+                      {f.options?.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : f.type === "multiselect" ? (
+                    <Select {...common} multiple size={Math.min(6, Math.max(3, f.options?.length ?? 3))} className="h-auto">
                       {f.options?.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}

@@ -43,6 +43,9 @@ model User {
   timeApproved    TimeEntry[]    @relation("TimeApprover")
   rates           Rate[]
   notifications   Notification[]
+  appointmentsOrganized Appointment[]         @relation("AppointmentOrganizer")
+  appointmentsAttending AppointmentAttendee[] @relation("AppointmentAttendee")
+  noticesAssigned       LegalNotice[]         @relation("NoticeAssignee")
   auditLogs       AuditLog[]
   deadlines       Deadline[]
   matterEvents    MatterEvent[]
@@ -133,6 +136,8 @@ model Client {
   tasks          Task[]
   rates          Rate[]
   messages       Message[]
+  appointments   Appointment[]
+  notices        LegalNotice[]
 
   @@index([nameAr])
   @@index([nameEn])
@@ -160,6 +165,11 @@ model PowerOfAttorney {
   scope      String?
   documentId String?   @unique
   document   Document? @relation(fields: [documentId], references: [id])
+  /// Checked against the original by staff; only verified PoAs can be linked to cases.
+  verified     Boolean   @default(false)
+  verifiedAt   DateTime?
+  verifiedById String?
+  matters      MatterPoa[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -274,6 +284,9 @@ model Matter {
   documents     Document[]
   timeEntries   TimeEntry[]
   feeAgreement  FeeAgreement?
+  powers        MatterPoa[]
+  appointments  Appointment[]
+  notices       LegalNotice[]
   invoices      Invoice[]
   quotes        Quote[]
   expenses      Expense[]
@@ -660,6 +673,7 @@ model Invoice {
 
   lines        InvoiceLine[]
   payments     Payment[]
+  allocations  PaymentAllocation[]
   creditNotes  CreditNote[]
   timeEntries  TimeEntry[]
   expenses     Expense[]
@@ -721,8 +735,22 @@ model Payment {
   notes         String?
   createdAt     DateTime       @default(now())
   deletedAt     DateTime?
+  allocations   PaymentAllocation[]
 
   @@index([clientId])
+}
+
+/// How a receipt is split across invoices; one payment can settle several invoices of the same client.
+model PaymentAllocation {
+  id        String  @id @default(cuid())
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  amount    Decimal @db.Decimal(14, 2)
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
 }
 
 model CreditNote {
@@ -1078,4 +1106,134 @@ model Sequence {
   padding Int    @default(4)
   yearly  Boolean @default(true)
   year    Int?
+}
+
+// ───────────── Case links, appointments, legal notices ─────────────
+
+model MatterPoa {
+  matterId String
+  matter   Matter          @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  poaId    String
+  poa      PowerOfAttorney @relation(fields: [poaId], references: [id], onDelete: Cascade)
+  linkedAt DateTime        @default(now())
+  linkedById String?
+
+  @@id([matterId, poaId])
+}
+
+enum AppointmentKind {
+  CLIENT_MEETING
+  INTERNAL_MEETING
+  CONSULTATION
+  COURT_VISIT
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  DONE
+  CANCELLED
+}
+
+enum ContactPreference {
+  IN_PERSON
+  PHONE
+  WHATSAPP
+  EMAIL
+  VIDEO
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  title        String
+  kind         AppointmentKind   @default(CLIENT_MEETING)
+  status       AppointmentStatus @default(SCHEDULED)
+  startAt      DateTime
+  endAt        DateTime?
+  location     String?
+  onlineLink   String?
+  clientId     String?
+  client       Client?           @relation(fields: [clientId], references: [id])
+  matterId     String?
+  matter       Matter?           @relation(fields: [matterId], references: [id])
+  organizerId  String
+  organizer    User              @relation("AppointmentOrganizer", fields: [organizerId], references: [id])
+  attendees    AppointmentAttendee[]
+  /// Client's preferred language and channel for this meeting.
+  language     String?
+  contactPreference ContactPreference?
+  notes        String?
+  outcome      String?
+  reminderSent Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
+
+  @@index([startAt])
+}
+
+model AppointmentAttendee {
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation("AppointmentAttendee", fields: [userId], references: [id])
+
+  @@id([appointmentId, userId])
+}
+
+enum NoticeDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum NoticeMethod {
+  NOTARY
+  COURT_BAILIFF
+  COURIER
+  REGISTERED_MAIL
+  EMAIL
+  WHATSAPP
+  HAND_DELIVERY
+  OTHER
+}
+
+enum NoticeStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  REFUSED
+  FAILED
+}
+
+model LegalNotice {
+  id             String          @id @default(cuid())
+  title          String
+  direction      NoticeDirection @default(OUTGOING)
+  clientId       String
+  client         Client          @relation(fields: [clientId], references: [id])
+  matterId       String?
+  matter         Matter?         @relation(fields: [matterId], references: [id])
+  counterparty   String
+  method         NoticeMethod    @default(NOTARY)
+  status         NoticeStatus    @default(DRAFT)
+  reference      String?
+  sentAt         DateTime?
+  servedAt       DateTime?
+  acknowledgedAt DateTime?
+  /// Grace period that starts on the service date; the due date skips weekends and holidays.
+  graceDays      Int?
+  dueDate        DateTime?
+  /// Deadline created on the case for the due date, when the notice belongs to a case.
+  deadlineId     String?         @unique
+  documentId     String?
+  assigneeId     String?
+  assignee       User?           @relation("NoticeAssignee", fields: [assigneeId], references: [id])
+  createdById    String?
+  notes          String?
+  reminderSent   Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  @@index([dueDate])
 }

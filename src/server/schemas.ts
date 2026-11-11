@@ -11,6 +11,8 @@ import * as hr from "./hr/schema";
 import * as settings from "./settings/schema";
 import * as portal from "./portal/schema";
 import * as ai from "./ai/schema";
+import * as appointments from "./appointments/schema";
+import * as notices from "./notices/schema";
 
 /** Lets client forms look up a schema by key, since Zod schemas cannot be passed from server components. */
 export const schemas = {
@@ -26,6 +28,7 @@ export const schemas = {
   party: clients.partySchema,
   matter: matters.matterSchema,
   matterParty: matters.matterPartySchema,
+  poaLink: matters.poaLinkSchema,
   member: matters.memberSchema,
   event: matters.eventSchema,
   feeAgreement: matters.feeAgreementSchema,
@@ -71,6 +74,8 @@ export const schemas = {
   emailTemplate: settings.emailTemplateSchema,
   message: portal.messageSchema,
   aiSettings: ai.aiSettingsSchema,
+  appointment: appointments.appointmentSchema,
+  notice: notices.noticeSchema,
 } as const;
 
 export type SchemaKey = keyof typeof schemas;

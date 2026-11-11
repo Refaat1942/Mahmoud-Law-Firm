@@ -31,6 +31,12 @@ export const ENUMS = {
   ExpiryState: ["VALID", "EXPIRING", "EXPIRED"],
   StatementKind: ["invoice", "payment", "creditNote", "trustApplied"],
   Language: ["ar", "en"],
+  AppointmentKind: ["CLIENT_MEETING", "INTERNAL_MEETING", "CONSULTATION", "COURT_VISIT", "OTHER"],
+  AppointmentStatus: ["SCHEDULED", "DONE", "CANCELLED"],
+  ContactPreference: ["IN_PERSON", "PHONE", "WHATSAPP", "EMAIL", "VIDEO"],
+  NoticeDirection: ["OUTGOING", "INCOMING"],
+  NoticeMethod: ["NOTARY", "COURT_BAILIFF", "COURIER", "REGISTERED_MAIL", "EMAIL", "WHATSAPP", "HAND_DELIVERY", "OTHER"],
+  NoticeStatus: ["DRAFT", "SENT", "DELIVERED", "REFUSED", "FAILED"],
   Currency: ["AED", "USD", "EUR", "SAR", "GBP"],
   Emirate: ["ABU_DHABI", "DUBAI", "SHARJAH", "AJMAN", "UMM_AL_QUWAIN", "RAS_AL_KHAIMAH", "FUJAIRAH", "FEDERAL"],
 } as const;

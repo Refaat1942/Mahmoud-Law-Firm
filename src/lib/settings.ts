@@ -74,6 +74,18 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplates = {
     bodyAr: "{{title}} ينتهي بتاريخ {{date}}.",
     bodyEn: "{{title}} expires on {{date}}.",
   },
+  appointmentReminder: {
+    subjectAr: "تذكير بموعد: {{title}}",
+    subjectEn: "Appointment reminder: {{title}}",
+    bodyAr: "لديك موعد {{title}} بتاريخ {{date}} في {{location}}.",
+    bodyEn: "You have {{title}} on {{date}} at {{location}}.",
+  },
+  noticeDeadline: {
+    subjectAr: "مهلة إنذار: {{title}}",
+    subjectEn: "Notice deadline: {{title}}",
+    bodyAr: "تنتهي مهلة الإنذار {{title}} الموجّه إلى {{counterparty}} بتاريخ {{date}}.",
+    bodyEn: "The notice {{title}} to {{counterparty}} expires on {{date}}.",
+  },
   invoiceOverdue: {
     subjectAr: "فاتورة متأخرة: {{number}}",
     subjectEn: "Overdue invoice: {{number}}",

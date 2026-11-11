@@ -40,6 +40,8 @@ export const paymentSchema = z
     bankAccountId: zId(),
     reference: zOptText(100),
     notes: zOptText(),
+    /** Split across several invoices of the client; when absent, invoiceId takes the whole amount. */
+    allocations: z.array(z.object({ invoiceId: zId(), amount: zMoney() })).max(100).optional(),
   })
   .refine((p) => p.amount > 0, { message: "v.min0", path: ["amount"] })
   .refine((p) => p.method !== "CHEQUE" || !!p.chequeNo, { message: "v.required", path: ["chequeNo"] });
@@ -62,3 +64,5 @@ export const trustSchema = z.object({
 });
 
 export const applyTrustSchema = z.object({ amount: zMoney() });
+
+export const allocateSchema = z.object({ allocations: z.array(z.object({ invoiceId: zId(), amount: zMoney() })).min(1).max(100) });

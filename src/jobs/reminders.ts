@@ -40,7 +40,7 @@ async function matterRecipients(matter: { responsibleId: string | null; members:
 export async function runReminders(now = new Date()) {
   const office = await getOffice();
   const horizon = addDays(startOfDay(now), office.reminderDaysBefore + 1);
-  const counts = { hearings: 0, deadlines: 0, tasks: 0, poa: 0, employeeDocs: 0, invoices: 0 };
+  const counts = { hearings: 0, deadlines: 0, tasks: 0, appointments: 0, notices: 0, poa: 0, employeeDocs: 0, invoices: 0 };
 
   const hearings = await prisma.hearing.findMany({
     where: { deletedAt: null, status: "SCHEDULED", reminderSent: false, date: { gte: now, lt: horizon }, matter: { deletedAt: null } },
@@ -85,6 +85,37 @@ export async function runReminders(now = new Date()) {
     await notify({ userId: task.assigneeId!, type: "task", template: "taskReminder", vars: { title: task.title, date: fmt(task.dueDate!) }, link: `/tasks/${task.id}` });
     await prisma.task.update({ where: { id: task.id }, data: { reminderSent: true } });
     counts.tasks++;
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where: { deletedAt: null, status: "SCHEDULED", reminderSent: false, startAt: { gte: now, lt: horizon } },
+    include: { attendees: true },
+  });
+  for (const a of appointments) {
+    for (const userId of new Set([a.organizerId, ...a.attendees.map((x) => x.userId)])) {
+      await notify({
+        userId,
+        type: "appointment",
+        template: "appointmentReminder",
+        vars: { title: a.title, date: fmt(a.startAt, true), location: a.location ?? a.onlineLink ?? "" },
+        link: `/appointments/${a.id}`,
+      });
+    }
+    await prisma.appointment.update({ where: { id: a.id }, data: { reminderSent: true } });
+    counts.appointments++;
+  }
+
+  // Notices without a case have no Deadline row; their due date is reminded here.
+  const notices = await prisma.legalNotice.findMany({
+    where: { deletedAt: null, reminderSent: false, deadlineId: null, dueDate: { lt: horizon } },
+  });
+  for (const n of notices) {
+    const recipients = n.assigneeId ? [n.assigneeId] : n.createdById ? [n.createdById] : [];
+    for (const userId of recipients) {
+      await notify({ userId, type: "notice", template: "noticeDeadline", vars: { title: n.title, counterparty: n.counterparty, date: fmt(n.dueDate!) }, link: `/notices/${n.id}` });
+    }
+    await prisma.legalNotice.update({ where: { id: n.id }, data: { reminderSent: true } });
+    counts.notices++;
   }
 
   const expiryHorizon = addDays(startOfDay(now), EXPIRY_WINDOW_DAYS);

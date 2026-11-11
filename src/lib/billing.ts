@@ -32,3 +32,43 @@ export function creditNoteTotals(net: DecimalValue, vatRate: DecimalValue) {
   const vatAmount = round2(subtotal.times(dec(vatRate)).dividedBy(100));
   return { subtotal, vatAmount, total: subtotal.plus(vatAmount) };
 }
+
+export type AllocationInput = { invoiceId: string; amount: DecimalValue };
+export type OpenInvoice = { id: string; due: DecimalValue };
+
+/**
+ * Checks how a receipt is split across invoices: positive amounts, each within that invoice's balance,
+ * no invoice twice, and the total not above the receipt. Returns an error key or null.
+ */
+export function validateAllocations(amount: DecimalValue, allocations: AllocationInput[], open: OpenInvoice[]): string | null {
+  const seen = new Set<string>();
+  const dues = new Map(open.map((o) => [o.id, round2(o.due)]));
+  let total = dec(0);
+  for (const a of allocations) {
+    const v = round2(a.amount);
+    if (!v.greaterThan(0)) return "billing.allocationPositive";
+    if (seen.has(a.invoiceId)) return "billing.allocationDuplicate";
+    seen.add(a.invoiceId);
+    const due = dues.get(a.invoiceId);
+    if (!due) return "billing.notPayable";
+    if (v.greaterThan(due)) return "billing.overpayment";
+    total = total.plus(v);
+  }
+  if (total.greaterThan(round2(amount))) return "billing.allocationExceeds";
+  return null;
+}
+
+/** Oldest-first split of an amount over open invoices (the order given). */
+export function autoAllocate(amount: DecimalValue, open: OpenInvoice[]): AllocationInput[] {
+  let left = round2(amount);
+  const out: AllocationInput[] = [];
+  for (const o of open) {
+    if (!left.greaterThan(0)) break;
+    const due = round2(o.due);
+    if (!due.greaterThan(0)) continue;
+    const take = due.lessThan(left) ? due : left;
+    out.push({ invoiceId: o.id, amount: take });
+    left = left.minus(take);
+  }
+  return out;
+}
