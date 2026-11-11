@@ -4,6 +4,9 @@ import { getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { can, getCurrentUser, matterScope } from "@/lib/session";
 import { localized, localizedTitle } from "@/lib/utils";
+import { invoiceScope } from "../billing/queries";
+import { documentScope } from "../documents/queries";
+import { taskScope } from "../tasks/queries";
 
 export type SearchHit = { group: "clients" | "matters" | "documents" | "invoices" | "tasks" | "employees"; title: string; subtitle?: string; href: string };
 
@@ -24,16 +27,21 @@ export async function globalSearch(query: string): Promise<SearchHit[]> {
       : [],
     can(user, "matters")
       ? prisma.matter.findMany({
-          where: { AND: [matterScope(user), { OR: [{ titleAr: like }, { titleEn: like }, { fileNo: like }, { courtCaseNo: like }] }] },
+          where: {
+            AND: [
+              matterScope(user),
+              { OR: [{ titleAr: like }, { titleEn: like }, { fileNo: like }, { courtCaseNo: like }, { parties: { some: { party: { OR: [{ nameAr: like }, { nameEn: like }] } } } }] },
+            ],
+          },
           include: { client: true },
           take: 6,
         })
       : [],
     can(user, "documents")
-      ? prisma.document.findMany({ where: { deletedAt: null, OR: [{ name: like }, { tags: { has: q } }] }, take: 6 })
+      ? prisma.document.findMany({ where: { AND: [documentScope(user), { OR: [{ name: like }, { tags: { has: q } }] }] }, take: 6 })
       : [],
-    can(user, "billing") ? prisma.invoice.findMany({ where: { deletedAt: null, number: like }, include: { client: true }, take: 6 }) : [],
-    can(user, "tasks") ? prisma.task.findMany({ where: { deletedAt: null, title: like }, take: 6 }) : [],
+    can(user, "billing") ? prisma.invoice.findMany({ where: { AND: [invoiceScope(user), { number: like }] }, include: { client: true }, take: 6 }) : [],
+    can(user, "tasks") ? prisma.task.findMany({ where: { AND: [taskScope(user), { title: like }] }, take: 6 }) : [],
     can(user, "hr") ? prisma.employee.findMany({ where: { deletedAt: null, OR: [{ nameAr: like }, { nameEn: like }, { code: like }] }, take: 6 }) : [],
   ]);
 

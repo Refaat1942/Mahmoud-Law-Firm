@@ -8,7 +8,8 @@ export async function audit(
   let ip: string | null = null;
   try {
     const h = await headers();
-    ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip");
+    // Prefer X-Real-IP (set by nginx); the first X-Forwarded-For entry is client-controlled.
+    ip = h.get("x-real-ip") ?? h.get("x-forwarded-for")?.split(",").at(-1)?.trim() ?? null;
   } catch {
     ip = null;
   }

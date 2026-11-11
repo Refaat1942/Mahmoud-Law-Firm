@@ -16,6 +16,8 @@ import { DateText, Money } from "@/components/format";
 import { DetailList, PageHeader, Section, StatCard, Tabs } from "@/components/page";
 import { addContact, addPoa, deleteClient, deleteContact, deletePoa } from "@/server/clients/actions";
 import { clientStatement } from "@/server/clients/queries";
+import { invoiceScope } from "@/server/billing/queries";
+import { documentScope } from "@/server/documents/queries";
 import { replyToClient } from "@/server/portal/actions";
 import { MessageThread } from "@/components/message-thread";
 
@@ -92,7 +94,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       />
     );
   } else if (tab === "invoices") {
-    const invoices = await prisma.invoice.findMany({ where: { clientId: id, deletedAt: null }, orderBy: { issueDate: "desc" } });
+    const invoices = await prisma.invoice.findMany({ where: { AND: [invoiceScope(user), { clientId: id }] }, orderBy: { issueDate: "desc" } });
     content = (
       <DataTable
         exportName={`${client.code}-invoices`}
@@ -167,7 +169,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       </div>
     );
   } else if (tab === "documents") {
-    const docs = await prisma.document.findMany({ where: { clientId: id, deletedAt: null }, orderBy: { createdAt: "desc" } });
+    const docs = await prisma.document.findMany({ where: { AND: [documentScope(user), { clientId: id }] }, orderBy: { createdAt: "desc" } });
     content = (
       <DataTable
         exportName={`${client.code}-documents`}

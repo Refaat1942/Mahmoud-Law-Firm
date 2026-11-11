@@ -3,10 +3,25 @@ import Credentials from "next-auth/providers/credentials";
 import { verify } from "@node-rs/argon2";
 import { authenticator } from "otplib";
 import { prisma } from "./prisma";
+import { headers } from "next/headers";
 import { audit } from "./audit";
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
+// Per-IP throttle on top of the per-account lockout, so many accounts (or unknown emails) cannot be tried
+// from one address.
+const IP_WINDOW_MINUTES = 15;
+const IP_MAX_FAILED = 20;
+
+async function clientIp() {
+  try {
+    const h = await headers();
+    // nginx sets X-Real-IP to the connecting address; the first X-Forwarded-For entry can be forged by the client.
+    return h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 class LoginError extends CredentialsSignin {
   constructor(code: string) {
@@ -28,8 +43,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const otp = String(raw?.otp ?? "").trim();
         if (!email || !password) throw new LoginError("invalid");
 
+        const ip = await clientIp();
+        if (ip) {
+          const recent = await prisma.auditLog.count({
+            where: { action: "login_failed", ip, createdAt: { gte: new Date(Date.now() - IP_WINDOW_MINUTES * 60_000) } },
+          });
+          if (recent >= IP_MAX_FAILED) throw new LoginError("throttled");
+        }
+
         const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
-        if (!user || !user.isActive) throw new LoginError("invalid");
+        if (!user || !user.isActive) {
+          await audit({ action: "login_failed", entity: "User", data: { email } });
+          throw new LoginError("invalid");
+        }
         if (user.lockedUntil && user.lockedUntil > new Date()) throw new LoginError("locked");
 
         const ok = await verify(user.passwordHash, password);

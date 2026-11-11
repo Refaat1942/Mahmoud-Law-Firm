@@ -4,14 +4,15 @@ import { HttpError, apiLocale, apiUser, withErrors } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { getOffice } from "@/lib/settings";
 import { localized } from "@/lib/utils";
+import { paymentScope } from "@/server/billing/queries";
 import { PdfShell, fmtDate, fmtMoney, loadLogo, pdfResponse, renderPdf, row, s } from "@/lib/pdf/base";
 
 /** Receipt voucher for a payment received. */
 export const GET = withErrors(async (req, { params }) => {
-  await apiUser("billing");
+  const user = await apiUser("billing");
   const locale = apiLocale(req);
   const { id } = await params;
-  const p = await prisma.payment.findFirst({ where: { id, deletedAt: null }, include: { client: true, invoice: true, bankAccount: true } });
+  const p = await prisma.payment.findFirst({ where: { AND: [paymentScope(user), { id }] }, include: { client: true, invoice: true, bankAccount: true } });
   if (!p) throw new HttpError(404);
   const t = await getTranslations({ locale });
   const office = await getOffice();

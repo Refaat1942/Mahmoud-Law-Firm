@@ -11,13 +11,14 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowDownUp, ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Badge, STATUS_TONES } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input, Select } from "./ui/input";
 import { useFmt } from "./format";
+import { logExport } from "@/server/audit/actions";
 
 export type ColumnType = "text" | "date" | "datetime" | "money" | "number" | "badge" | "bool" | "hours";
 
@@ -54,6 +55,7 @@ export function DataTable({
   emptyText?: string;
 }) {
   const t = useTranslations();
+  const locale = useLocale();
   const fmt = useFmt();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -136,18 +138,38 @@ export function DataTable({
     initialState: { pagination: { pageSize } },
   });
 
-  const exportCsv = () => {
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    const lines = [
-      columns.map((c) => escape(c.label)).join(","),
-      ...table.getFilteredRowModel().rows.map((r) => columns.map((c) => escape(display(c, r.original))).join(",")),
-    ];
-    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const exportRows = () => table.getFilteredRowModel().rows.map((r) => columns.map((c) => display(c, r.original)));
+  const fileName = exportName ?? "export";
+  const download = (blob: Blob, ext: string) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${exportName ?? "export"}.csv`;
+    a.download = `${fileName}.${ext}`;
     a.click();
     URL.revokeObjectURL(a.href);
+  };
+
+  const exportCsv = () => {
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const rows = exportRows();
+    const lines = [columns.map((c) => escape(c.label)).join(","), ...rows.map((r) => r.map(escape).join(","))];
+    download(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "csv");
+    void logExport(fileName, "csv", rows.length);
+  };
+
+  /** Real .xlsx (right-to-left sheet in Arabic); exceljs is loaded only when used. */
+  const exportXlsx = async () => {
+    const rows = exportRows();
+    const { default: ExcelJS } = await import("exceljs");
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(fileName.slice(0, 31), { views: [{ rightToLeft: locale === "ar", state: "frozen", ySplit: 1 }] });
+    ws.addRow(columns.map((c) => c.label)).font = { bold: true };
+    for (const r of rows) ws.addRow(r);
+    ws.columns.forEach((col, i) => {
+      col.width = Math.min(60, Math.max(10, ...[columns[i].label, ...rows.map((r) => r[i] ?? "")].map((v) => String(v).length + 2)));
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    download(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "xlsx");
+    void logExport(fileName, "xlsx", rows.length);
   };
 
   const { pageIndex } = table.getState().pagination;
@@ -180,8 +202,11 @@ export function DataTable({
         ))}
         <div className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
           {t("common.records", { count: table.getFilteredRowModel().rows.length })}
-          <Button variant="outline" size="sm" onClick={exportCsv} type="button">
-            <Download /> {t("common.export")}
+          <Button variant="outline" size="sm" onClick={() => void exportXlsx()} type="button">
+            <Download /> {t("common.exportExcel")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={exportCsv} type="button">
+            CSV
           </Button>
         </div>
       </div>

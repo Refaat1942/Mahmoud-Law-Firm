@@ -12,6 +12,7 @@ import { DateText, Money } from "@/components/format";
 import { PageHeader, Section } from "@/components/page";
 import { enumOptions } from "@/server/options";
 import { setChequeStatus } from "@/server/billing/actions";
+import { paymentScope } from "@/server/billing/queries";
 import { BillingNav } from "../nav";
 
 export default async function PaymentsPage() {
@@ -19,7 +20,7 @@ export default async function PaymentsPage() {
   const t = await getTranslations();
   const locale = await getLocale();
   const payments = await prisma.payment.findMany({
-    where: { deletedAt: null },
+    where: paymentScope(user),
     include: { client: true, invoice: true, bankAccount: true },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: 3000,

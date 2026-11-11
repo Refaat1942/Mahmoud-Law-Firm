@@ -12,13 +12,14 @@ import { DataTable } from "@/components/data-table";
 import { Money } from "@/components/format";
 import { PageHeader, Section, StatCard } from "@/components/page";
 import { enumOptions } from "@/server/options";
+import { trustScope } from "@/server/billing/queries";
 import { BillingNav } from "../nav";
 
 export default async function TrustPage() {
   const user = await requirePermission("billing");
   const t = await getTranslations();
   const locale = await getLocale();
-  const rows = await prisma.trustTransaction.findMany({ include: { client: true, matter: true, invoice: true, bankAccount: true }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
+  const rows = await prisma.trustTransaction.findMany({ where: trustScope(user), include: { client: true, matter: true, invoice: true, bankAccount: true }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
   const byClient = new Map<string, { name: string; id: string; movements: typeof rows }>();
   for (const r of rows) {
     const entry = byClient.get(r.clientId) ?? { name: localized(r.client, locale), id: r.clientId, movements: [] };
